@@ -1,0 +1,73 @@
+{
+  "version": "2.0.0",
+  "options": {
+    "cwd": "${workspaceFolder}"
+  },
+  "tasks": [
+    {
+      "label": "cmake: configure",
+      "type": "shell",
+      "command": "cmake",
+      "args": [
+        "-S", "${workspaceFolder}",
+        "-B", "${workspaceFolder}/build",
+        "-G", "MinGW Makefiles",
+        "-DCMAKE_CXX_COMPILER=C:/mingw64/bin/g++.exe",
+        "-DCMAKE_MAKE_PROGRAM=C:/mingw64/bin/mingw32-make.exe",
+        "-DCMAKE_BUILD_TYPE=Release"
+      ],
+      "problemMatcher": []
+    },
+    {
+      "label": "cmake: build",
+      "type": "shell",
+      "command": "cmake",
+      "args": ["--build", "${workspaceFolder}/build", "-j", "4"],
+      "dependsOn": "cmake: configure",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    },
+    {
+      "label": "test: selftest",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/terminal_demo.exe",
+      "args": ["--selftest"],
+      "dependsOn": "cmake: build",
+      "group": {
+        "kind": "test",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "run: demo",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/terminal_demo.exe",
+      "dependsOn": "cmake: build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "run: frame (ANSI)",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/terminal_demo.exe",
+      "args": ["--frame"],
+      "dependsOn": "cmake: build",
+      "problemMatcher": []
+    },
+    {
+      "label": "run: bench",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/terminal_demo.exe",
+      "args": ["--bench", "200"],
+      "dependsOn": "cmake: build",
+      "problemMatcher": []
+    }
+  ]
+}
