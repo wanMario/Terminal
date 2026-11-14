@@ -400,6 +400,11 @@ namespace Terminal {
                     ev.fy = cy;
                     ev.fine = true;
                     ev.action = MouseAction::Move;
+                    // 原始输入只报“格内位移”，控制台事件才有修饰键；这里补读
+                    // 当前 Ctrl/Shift/Alt，否则按住 Ctrl 缩放窗口时 Move 会丢修饰键。
+                    ev.ctrl = (GetAsyncKeyState(VK_CONTROL) & 0x8000) != 0;
+                    ev.shift = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
+                    ev.alt = (GetAsyncKeyState(VK_MENU) & 0x8000) != 0;
                     return true;
                 }
             } // namespace Raw
@@ -559,6 +564,28 @@ namespace Terminal {
     //======================================================================
     // 鼠标路由：命中测试 + 悬停 / 捕获 / 焦点
     //======================================================================
+    // 把控件声明的指针语义映射成 Win32 标准光标。
+    // 注意：控制台窗口属于 conhost/Windows Terminal，跨进程窗口不一定允许应用改指针；
+    // 这里做 best-effort，失败时由前端继续使用控件自己的命中/高亮提示。
+    inline void ApplyMouseCursor(const MouseCursor cursor) {
+        static MouseCursor last = MouseCursor::Arrow;
+        if (cursor == last) return;
+        last = cursor;
+
+        LPCSTR id = IDC_ARROW;
+        switch (cursor) {
+        case MouseCursor::IBeam:     id = IDC_IBEAM; break;
+        case MouseCursor::Hand:      id = IDC_HAND; break;
+        case MouseCursor::SizeWE:    id = IDC_SIZEWE; break;
+        case MouseCursor::SizeNS:    id = IDC_SIZENS; break;
+        case MouseCursor::SizeAll:   id = IDC_SIZEALL; break;
+        case MouseCursor::Crosshair: id = IDC_CROSS; break;
+        case MouseCursor::Arrow:
+        default:                     id = IDC_ARROW; break;
+        }
+        if (HCURSOR h = LoadCursorA(nullptr, id); h != nullptr) SetCursor(h);
+    }
+
     class MouseRouter {
     public:
         static MouseRouter& Instance() {
@@ -566,9 +593,21 @@ namespace Terminal {
             return router;
         }
 
-        void SetRoot(UI* root) { m_root = root; m_hover = nullptr; m_capture = nullptr; }
+        void SetRoot(UI* root) {
+            m_root = root;
+            m_hover = nullptr;
+            m_capture = nullptr;
+            m_x = -1;
+            m_y = -1;
+        }
 
-        void Clear() { m_root = nullptr; m_hover = nullptr; m_capture = nullptr; }
+        void Clear() {
+            m_root = nullptr;
+            m_hover = nullptr;
+            m_capture = nullptr;
+            m_x = -1;
+            m_y = -1;
+        }
 
         [[nodiscard]] UI* Root() const { return m_root; }
         [[nodiscard]] UI* Hover() const { return m_hover; }
@@ -577,11 +616,24 @@ namespace Terminal {
         // 命中测试：可见 + 落在矩形内，子元素优先（后加入的更靠上）
         static UI* HitTest(UI* root, const int x, const int y) {
             if (root == nullptr || !root->isVisible || !root->HitTest(x, y)) return nullptr;
+            // 滚动条等“压住内容”的热区优先于子元素，否则点到底部横条会先命中列表行。
+            if (root->HitTestOverlay(x, y)) return root;
             for (auto it = root->children.rbegin(); it != root->children.rend(); ++it) {
                 if (UI* hit = HitTest(it->get(), x, y)) return hit;
             }
             return root;
         }
+
+        // 当前指针语义：捕获拖拽时优先用被捕获控件（缩放/滑条），否则用最深层命中控件。
+        [[nodiscard]] MouseCursor Cursor() const {
+            if (m_root == nullptr) return MouseCursor::Arrow;
+            UI* target = m_capture;
+            if (target == nullptr) target = HitTest(m_root, m_x, m_y);
+            return target != nullptr ? target->CursorAt(m_x, m_y) : MouseCursor::Arrow;
+        }
+
+        // 主循环每帧调用一次；内部只在形状变化时真正 SetCursor。
+        void ApplyCursor() const { ApplyMouseCursor(Cursor()); }
 
         /**
          * @brief 分发一条鼠标事件。
@@ -589,7 +641,8 @@ namespace Terminal {
          */
         bool Dispatch(const xMouse& ev) {
             if (m_root == nullptr) return false;
-
+            m_x = ev.x;
+            m_y = ev.y;
             UI* target = HitTest(m_root, ev.x, ev.y);
 
             if (ev.action == MouseAction::Move) {
@@ -642,6 +695,8 @@ namespace Terminal {
         UI* m_root{ nullptr };
         UI* m_hover{ nullptr };
         UI* m_capture{ nullptr };
+        int m_x{ -1 };
+        int m_y{ -1 };
     };
 
 } // namespace Terminal

@@ -33,7 +33,7 @@
 #include "Components/TerminalButton.hpp"    // Button    按钮
 #include "Components/TerminalTextInput.hpp" // TextInput 输入框（含 Legacy::InputV1）
 #include "Components/TerminalSlider.hpp"    // Slider    滑杆
-#include "Components/TerminalScrollView.hpp"// ScrollView 滚动容器（竖向滚动条 + 滚轮）
+#include "Components/TerminalScrollView.hpp"// ScrollView 滚动容器（横竖双轴 + 滚轮）
 #include "Components/TerminalImage.hpp"     // UIImage   半格像素图片（PNG/JPG，WIC 解码）
 #include "Components/TerminalBorder.hpp"    // Border    边框容器
 #include "Components/TerminalPanel.hpp"     // Panel     面板容器（标题 + 内边距）
@@ -42,6 +42,7 @@
 #include "Components/TerminalSwitch.hpp"    // Switch    开关
 #include "Components/TerminalChoiceGroup.hpp" // ChoiceGroup 单选/多选
 #include "Components/TerminalWindow.hpp"    // Window    可拖动/关闭弹窗
+#include "Components/TerminalOverlayHost.hpp" // OverlayHost 悬浮层（不占布局，只让子窗口命中）
 #include "Components/TerminalPageHolder.hpp"// PageHolder 可嵌套页面 + 局部队列
 
 namespace Terminal {

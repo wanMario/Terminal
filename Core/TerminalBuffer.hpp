@@ -8,7 +8,7 @@
 
 #include <algorithm>
 #include <climits>
-#include <climits>
+#include <cstdio>
 #include <cstdlib>
 #include <string>
 #include <vector>
@@ -144,40 +144,8 @@ namespace Terminal {
             return true;
         }
 
-        struct AlignmentReport {
-            bool detected{ false };       // 发现宽字符压到相邻格/越界
-            int fixed{ 0 };               // 被修掉的宽字符数量
-            bool switchedAscii{ false };  // 本次是否触发了 ASCII 兼容模式
-        };
-
-        // 帧级排版守卫：
-        //  1. 扫描宽字符是否只占一格却紧邻其他字符（终端实际渲染会把后文顶歪）；
-        //  2. 发现后先把 ● 换成 ·，其他全角字符换成空格；
-        //  3. 同时打开 Box 的 ASCII 兼容模式，下一帧强制边框对齐。
-        AlignmentReport EnsureAlignment(const bool enableFallback = true) {
-            AlignmentReport report;
-            for (int y = 0; y < m_height; ++y) {
-                for (int x = 0; x < m_width; ++x) {
-                    const wchar_t ch = GetChar(x, y);
-                    if (ch == L' ' || ch == L'\0') continue;
-                    int width = Utf8::CharWidth(static_cast<std::uint32_t>(ch));
-                    if (ch == L'\u25CF') width = std::max(width, 2); // ● 在部分终端按双宽显示
-                    if (width <= 1) continue;
-                    const bool overflow = (x + 1 >= m_width) || (GetChar(x + 1, y) != L' ');
-                    if (!overflow) continue;
-
-                    report.detected = true;
-                    ReplaceChar(x, y, (ch == L'\u25CF') ? L'\u00B7' : L' ');
-                    ++report.fixed;
-                    if (x + 1 < m_width) ReplaceChar(x + 1, y, L' ');
-                }
-            }
-            if (report.detected && enableFallback && !Box::AsciiFallback()) {
-                Box::SetAsciiFallback(true);
-                report.switchedAscii = true;
-            }
-            return report;
-        }
+        // 控件绘制出的内容按原样写入缓冲；兼容模式只在渲染入口按 ANSI 能力统一切换，
+        // 不再逐帧扫描宽字符改写画布（避免把正常 CJK/边框误判成错乱）。
 
         //------------------------------------------------------------------
         // 区域填充
@@ -328,13 +296,11 @@ namespace Terminal {
 
         // 自动选择刷新通道：真彩 + 终端支持 → ANSI，否则 16 色属性
         void FlushAuto(const HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE)) {
-            EnsureAlignment();
             if (m_trueColor && SupportsTrueColor(hOut)) FlushAnsi(hOut);
             else Flush(hOut);
         }
 
         void Flush(const HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE)) {
-            EnsureAlignment();
             if (IsEmpty() || hOut == nullptr) return;
 
             Rect2Di region = Bounds();
@@ -363,7 +329,6 @@ namespace Terminal {
         // 24 位真彩刷新：走 ANSI（需要虚拟终端支持）
         // 只重绘脏区内的行，避免整屏重写造成的闪烁与多余输出。
         void FlushAnsi(const HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE)) {
-            EnsureAlignment();
             if (IsEmpty() || hOut == nullptr) return;
             EnableVirtualTerminal(hOut);
 

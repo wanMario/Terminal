@@ -20,10 +20,14 @@ namespace Terminal {
     class ScrollView : public UI {
     public:
         int scroll{ 0 };              // 当前滚动行（0 = 顶部）
+        int scrollX{ 0 };             // 当前横向滚动列（0 = 最左）
         int wheelStep{ 3 };           // 滚轮一格的滚动行数
+        int wheelStepX{ 2 };          // Shift+滚轮一格的横向列数
         bool showScrollbar{ true };
+        bool showHScrollbar{ true };  // 内容比视口宽时自动出现底部横条
         bool fillBackground{ true };
         int scrollbarWidth{ 1 };
+        int scrollbarHeight{ 1 };
 
         ScrollView() {
             signature = "UIScrollView";
@@ -34,7 +38,9 @@ namespace Terminal {
         }
 
         ScrollView& SetWheelStep(const int n) { wheelStep = std::max(n, 1); return *this; }
+        ScrollView& SetWheelStepX(const int n) { wheelStepX = std::max(n, 1); return *this; }
         ScrollView& SetShowScrollbar(const bool b) { showScrollbar = b; InvalidateLayout(); return *this; }
+        ScrollView& SetShowHScrollbar(const bool b) { showHScrollbar = b; InvalidateLayout(); return *this; }
         ScrollView& SetBackgroundColor(const Color& c) { style.bg = c; style.opaque = true; Invalidate(); return *this; }
 
         //---------- 度量 ----------
@@ -70,26 +76,81 @@ namespace Terminal {
 
         [[nodiscard]] int ViewportHeight() const { return ContentBounds().height(); }
 
-        [[nodiscard]] int MaxScroll() const {
-            return std::max(ContentHeight() - ViewportHeight(), 0);
+        // 子内容自然宽度：有显式宽度就用显式宽度，否则按子元素自己量。
+        [[nodiscard]] int NaturalWidth() const {
+            int total = 0;
+            for (const auto& c : children) {
+                if (!c || !c->isVisible) continue;
+                total = std::max(total, c->layout.width >= 0 ? c->layout.width : c->PreferredWidth());
+            }
+            return total;
         }
 
-        // 含 1 列滚动条时的可视宽度
-        [[nodiscard]] int ContentWidth() const {
+        [[nodiscard]] bool HasVBar() const {
             const Bounds vp = ContentBounds();
-            const int bar = (showScrollbar && MaxScroll() > 0) ? scrollbarWidth : 0;
-            return std::max(vp.width() - bar, 0);
+            return showScrollbar && vp.height() > 0 && ContentHeight() > vp.height() - (HasHBar() ? scrollbarHeight : 0);
         }
+
+        [[nodiscard]] bool HasHBar() const {
+            const Bounds vp = ContentBounds();
+            const int vbar = (showScrollbar && ContentHeight() > vp.height()) ? scrollbarWidth : 0;
+            return showHScrollbar && vp.width() > 0 && NaturalWidth() > vp.width() - vbar;
+        }
+
+        [[nodiscard]] int ViewportWidth() const {
+            const Bounds vp = ContentBounds();
+            return std::max(vp.width() - (HasVBar() ? scrollbarWidth : 0), 0);
+        }
+
+        [[nodiscard]] int ViewportHeightActual() const {
+            const Bounds vp = ContentBounds();
+            return std::max(vp.height() - (HasHBar() ? scrollbarHeight : 0), 0);
+        }
+
+        [[nodiscard]] int MaxScroll() const {
+            return std::max(ContentHeight() - ViewportHeightActual(), 0);
+        }
+
+        [[nodiscard]] int MaxScrollX() const {
+            return std::max(NaturalWidth() - ViewportWidth(), 0);
+        }
+
+        // 含滚动条时的可视宽度
+        [[nodiscard]] int ContentWidth() const { return ViewportWidth(); }
 
         void SetScroll(const int value) {
             const int next = std::clamp(value, 0, MaxScroll());
             if (next == scroll) return;
             scroll = next;
-            InvalidateLayout();   // 子元素位置变了，需要重新 Arrange
+            // 滚动只影响自己的内容区，不需要让父级整树重排：立刻把子元素按新
+            // scroll 摆放，再重绘。否则拖动侧边滑杆时只会动滚动条，列表内容要等
+            // 下一次 Window/根容器 Arrange 才更新。
+            if (!bounds.IsEmpty()) {
+                OnLayout();
+                layoutDirty = false;
+            } else {
+                InvalidateLayout();
+            }
+            Invalidate();
+        }
+
+        void SetScrollX(const int value) {
+            const int next = std::clamp(value, 0, MaxScrollX());
+            if (next == scrollX) return;
+            scrollX = next;
+            if (!bounds.IsEmpty()) {
+                OnLayout();
+                layoutDirty = false;
+            } else {
+                InvalidateLayout();
+            }
+            Invalidate();
         }
 
         void ScrollBy(const int delta) { SetScroll(scroll + delta); }
-        void Page(const int dir) { ScrollBy(dir * std::max(ViewportHeight() - 1, 1)); }
+        void ScrollByX(const int delta) { SetScrollX(scrollX + delta); }
+        void Page(const int dir) { ScrollBy(dir * std::max(ViewportHeightActual() - 1, 1)); }
+        void PageX(const int dir) { ScrollByX(dir * std::max(ViewportWidth() - 1, 1)); }
 
         //---------- 布局 ----------
         void OnLayout() override {
@@ -97,17 +158,21 @@ namespace Terminal {
             if (vp.IsEmpty()) return;
 
             const int maxScroll = MaxScroll();
+            const int maxScrollX = MaxScrollX();
             scroll = std::clamp(scroll, 0, maxScroll);
+            scrollX = std::clamp(scrollX, 0, maxScrollX);
 
-            const int contentW = ContentWidth();
+            const int viewW = ViewportWidth();
+            const int contentW = std::max(viewW, NaturalWidth());
             const int gap = std::max(layout.gap, 0);
             int cursor = vp.Top() - scroll;
+            const int baseX = vp.Left() - scrollX;
 
             for (auto& child : children) {
                 if (!child || !child->isVisible) continue;
                 const int prefH = std::max(child->PreferredHeight(), 0);
                 int w = (child->layout.width >= 0) ? std::min(child->layout.width, contentW) : contentW;
-                int x = vp.Left();
+                int x = baseX;
                 if (w < contentW) {
                     switch (child->layout.align) {
                     case Align::Center: x += (contentW - w) / 2; break;
@@ -133,15 +198,39 @@ namespace Terminal {
 
         [[nodiscard]] BarGeom Bar() const {
             const Bounds vp = ContentBounds();
-            if (!showScrollbar || MaxScroll() <= 0 || vp.height() <= 0) return BarGeom{};
-            const int h = vp.height();
+            if (!HasVBar() || vp.width() <= 0) return BarGeom{};
+            const int h = ViewportHeightActual();
+            if (h <= 0) return BarGeom{};
             const int contentH = std::max(ContentHeight(), 1);
             const int thumbH = std::clamp(h * h / contentH, 1, h);
             const int travel = h - thumbH;
-            const int thumbTop = vp.Top() + (travel > 0
+            const int thumbTop = vp.Top() + (travel > 0 && MaxScroll() > 0
                 ? static_cast<int>(std::lround(static_cast<double>(scroll) / MaxScroll() * travel))
                 : 0);
             return BarGeom{ vp.Right() - 1, vp.Top(), h, thumbTop, thumbH, true };
+        }
+
+        struct HBarGeom {
+            int y{ 0 };
+            int left{ 0 };
+            int w{ 0 };
+            int thumbLeft{ 0 };
+            int thumbW{ 0 };
+            bool valid{ false };
+        };
+
+        [[nodiscard]] HBarGeom HBar() const {
+            const Bounds vp = ContentBounds();
+            if (!HasHBar() || vp.width() <= 0) return HBarGeom{};
+            const int w = ViewportWidth();
+            if (w <= 0) return HBarGeom{};
+            const int contentW = std::max(NaturalWidth(), 1);
+            const int thumbW = std::clamp(w * w / contentW, 1, w);
+            const int travel = w - thumbW;
+            const int thumbLeft = vp.Left() + (travel > 0 && MaxScrollX() > 0
+                ? static_cast<int>(std::lround(static_cast<double>(scrollX) / MaxScrollX() * travel))
+                : 0);
+            return HBarGeom{ vp.Top() + ViewportHeightActual(), vp.Left(), w, thumbLeft, thumbW, true };
         }
 
         void ScrollToThumbY(const double cellY) {
@@ -153,25 +242,77 @@ namespace Terminal {
             SetScroll(static_cast<int>(std::lround(ratio * MaxScroll())));
         }
 
+        void ScrollToThumbX(const double cellX) {
+            const HBarGeom g = HBar();
+            if (!g.valid) return;
+            const int travel = g.w - g.thumbW;
+            if (travel <= 0) { SetScrollX(0); return; }
+            const double ratio = std::clamp((cellX - static_cast<double>(g.thumbLeft)) / travel, 0.0, 1.0);
+            SetScrollX(static_cast<int>(std::lround(ratio * MaxScrollX())));
+        }
+
+        // 滚动条是“覆盖在内容上”的热区，必须优先于列表行命中。
+        [[nodiscard]] bool HitTestOverlay(const int x, const int y) const override {
+            if (!isVisible || !isEnabled) return false;
+            const BarGeom g = Bar();
+            if (g.valid && x == g.x && y >= g.top && y < g.top + g.h) return true;
+            const HBarGeom hg = HBar();
+            if (hg.valid && y == hg.y && x >= hg.left && x < hg.left + hg.w) return true;
+            return false;
+        }
+
+        [[nodiscard]] MouseCursor CursorAt(const int x, const int y) const override {
+            if (!isVisible || !isEnabled) return MouseCursor::Arrow;
+            const BarGeom g = Bar();
+            if (g.valid && x == g.x && y >= g.top && y < g.top + g.h) return MouseCursor::SizeNS;
+            const HBarGeom hg = HBar();
+            if (hg.valid && y == hg.y && x >= hg.left && x < hg.left + hg.w) return MouseCursor::SizeWE;
+            return UI::CursorAt(x, y);
+        }
+
         bool OnMouse(const xMouse& ev) override {
             if (!isEnabled) return false;
 
             if (ev.action == MouseAction::Wheel) {
                 const int raw = ev.wheelDelta;
-                int lines = raw / 120 * wheelStep;
-                if (lines == 0) lines = (raw > 0 ? wheelStep : -wheelStep);
-                ScrollBy(-lines);      // 滚轮向上为正 -> 内容向上滚（scroll 减小）
+                int lines = raw / 120;
+                if (lines == 0) lines = (raw > 0 ? 1 : -1);
+                if (ev.shift && HasHBar()) {
+                    ScrollByX(-lines * wheelStepX);
+                } else if (MaxScroll() > 0) {
+                    ScrollBy(-lines * wheelStep);
+                } else if (HasHBar()) {
+                    ScrollByX(-lines * wheelStepX);
+                }
                 return true;
             }
 
             const BarGeom g = Bar();
-            if (!g.valid) return false;
-            const bool inBar = (ev.x == g.x && ev.y >= g.top && ev.y < g.top + g.h);
+            const HBarGeom hg = HBar();
+            const bool inV = g.valid && ev.x == g.x && ev.y >= g.top && ev.y < g.top + g.h;
+            const bool inH = hg.valid && ev.y == hg.y && ev.x >= hg.left && ev.x < hg.left + hg.w;
 
             switch (ev.action) {
             case MouseAction::Down:
-                if (!inBar) return false;
+                if (inH) {
+                    m_draggingH = true;
+                    m_dragging = false;
+                    if (ev.x < hg.thumbLeft || ev.x >= hg.thumbLeft + hg.thumbW) {
+                        const int travel = hg.w - hg.thumbW;
+                        if (travel > 0) {
+                            const double r = std::clamp(static_cast<double>(ev.x - hg.thumbLeft) / travel, 0.0, 1.0);
+                            SetScrollX(static_cast<int>(std::lround(r * MaxScrollX())));
+                        }
+                        m_grabOffsetX = hg.thumbW / 2;
+                    } else {
+                        m_grabOffsetX = ev.x - hg.thumbLeft;
+                    }
+                    Invalidate();
+                    return true;
+                }
+                if (!inV) return false;
                 m_dragging = true;
+                m_draggingH = false;
                 if (ev.y < g.thumbTop || ev.y >= g.thumbTop + g.thumbH) {
                     // 点轨道空白：直接翻到该位置
                     const int travel = g.h - g.thumbH;
@@ -186,21 +327,45 @@ namespace Terminal {
                 Invalidate();
                 return true;
             case MouseAction::Move:
+                if (m_draggingH) {
+                    const HBarGeom now = HBar();
+                    if (!now.valid) return true;
+                    const int travel = now.w - now.thumbW;
+                    if (travel > 0) {
+                        const double wantLeft = ev.FineX() - static_cast<double>(m_grabOffsetX);
+                        const double left = std::clamp(wantLeft,
+                            static_cast<double>(now.left),
+                            static_cast<double>(now.left + travel));
+                        const double r = (left - static_cast<double>(now.left)) /
+                            static_cast<double>(travel);
+                        SetScrollX(static_cast<int>(std::lround(r * MaxScrollX())));
+                    }
+                    return true;
+                }
                 if (m_dragging) {
                     const BarGeom now = Bar();
                     if (!now.valid) return true;
                     const int travel = now.h - now.thumbH;
                     if (travel > 0) {
-                        const int wantTop = static_cast<int>(std::lround(ev.FineY())) - m_grabOffset;
-                        const int top = std::clamp(wantTop, now.top, now.top + travel);
-                        const double r = static_cast<double>(top - now.top) / travel;
+                        // 用亚格坐标直接换算比例，避免高 DPI 下必须跨一整格才动一档
+                        const double wantTop = ev.FineY() - static_cast<double>(m_grabOffset);
+                        const double top = std::clamp(wantTop,
+                            static_cast<double>(now.top),
+                            static_cast<double>(now.top + travel));
+                        const double r = (top - static_cast<double>(now.top)) /
+                            static_cast<double>(travel);
                         SetScroll(static_cast<int>(std::lround(r * MaxScroll())));
                     }
                     return true;
                 }
-                return inBar;
+                return inV || inH;
             case MouseAction::Up:
-                if (m_dragging) { m_dragging = false; Invalidate(); return true; }
+                if (m_dragging || m_draggingH) {
+                    m_dragging = false;
+                    m_draggingH = false;
+                    Invalidate();
+                    return true;
+                }
                 return false;
             default:
                 return false;
@@ -213,35 +378,56 @@ namespace Terminal {
             if (IsKey(key, SKey::PageDown)) { Page(1); return true; }
             if (IsKey(key, SKey::Home)) { SetScroll(0); return true; }
             if (IsKey(key, SKey::End)) { SetScroll(MaxScroll()); return true; }
+            if (IsKey(key, SKey::LeftArrow)) { ScrollByX(-1); return true; }
+            if (IsKey(key, SKey::RightArrow)) { ScrollByX(1); return true; }
             return false;
         }
 
-        // 消息："scrollTo" / "scrollBy" / "page"
+        // 消息："scrollTo" / "scrollBy" / "scrollToX" / "scrollByX" / "page"
         bool OnMessage(const Message& msg) override {
             if (msg.type == "scrollTo") { SetScroll(static_cast<int>(msg.number)); return true; }
             if (msg.type == "scrollBy") { ScrollBy(static_cast<int>(msg.number)); return true; }
+            if (msg.type == "scrollToX") { SetScrollX(static_cast<int>(msg.number)); return true; }
+            if (msg.type == "scrollByX") { ScrollByX(static_cast<int>(msg.number)); return true; }
             if (msg.type == "page") { Page(msg.number >= 0 ? 1 : -1); return true; }
+            if (msg.type == "pageX") { PageX(msg.number >= 0 ? 1 : -1); return true; }
             return UI::OnMessage(msg);
         }
 
         //---------- 绘制 ----------
         void OnRender(ConsoleBackBuffer& buf) override {
-            const Theme& th = Theme::Current();
             const Color bg = EffectiveBackground();
             if (fillBackground) buf.FillStyle(bounds, Style(style.fg, bg));
+        }
 
+        // 滚动条必须画在子元素之后，否则滚动到最后一行的内容会盖住横条/竖条。
+        void OnRenderOverlay(ConsoleBackBuffer& buf) override {
+            const Theme& th = Theme::Current();
+            const Color bg = EffectiveBackground();
             const BarGeom g = Bar();
-            if (!g.valid) return;
-            for (int y = g.top; y < g.top + g.h; ++y) {
-                const bool thumb = (y >= g.thumbTop && y < g.thumbTop + g.thumbH);
-                buf.SetCell(g.x, y, thumb ? L'█' : L'│',
-                            Style(thumb ? th.thumb : th.border, bg));
+            if (g.valid) {
+                for (int y = g.top; y < g.top + g.h; ++y) {
+                    const bool thumb = (y >= g.thumbTop && y < g.thumbTop + g.thumbH);
+                    buf.SetCell(g.x, y, thumb ? L'█' : L'│',
+                                Style(thumb ? th.thumb : th.border, bg));
+                }
+            }
+
+            const HBarGeom hg = HBar();
+            if (hg.valid) {
+                for (int x = hg.left; x < hg.left + hg.w; ++x) {
+                    const bool thumb = (x >= hg.thumbLeft && x < hg.thumbLeft + hg.thumbW);
+                    buf.SetCell(x, hg.y, thumb ? L'█' : L'─',
+                                Style(thumb ? th.thumb : th.border, bg));
+                }
             }
         }
 
     private:
         bool m_dragging{ false };
+        bool m_draggingH{ false };
         int m_grabOffset{ 0 };
+        int m_grabOffsetX{ 0 };
     };
 
     using UIScrollView = ScrollView;

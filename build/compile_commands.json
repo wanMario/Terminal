@@ -1,0 +1,26 @@
+[
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/TerminalUI.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\TerminalUI.dir\\src\\TerminalUI.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\src\\TerminalUI.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/src/TerminalUI.cpp",
+  "output": "CMakeFiles/TerminalUI.dir/src/TerminalUI.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/TerminalUI.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\TerminalUI.dir\\D_\\wan1\\C++\\Libraries\\ToolHead\\DataStructure\\Json\\JsonCore.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\DataStructure\\Json\\JsonCore.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.cpp",
+  "output": "CMakeFiles/TerminalUI.dir/D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/TerminalUI.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\TerminalUI.dir\\D_\\wan1\\C++\\Libraries\\ToolHead\\DataStructure\\Json\\Number.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\DataStructure\\Json\\Number.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/DataStructure/Json/Number.cpp",
+  "output": "CMakeFiles/TerminalUI.dir/D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/Number.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/terminal_demo.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\terminal_demo.dir\\examples\\demo.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\examples\\demo.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/examples/demo.cpp",
+  "output": "CMakeFiles/terminal_demo.dir/examples/demo.cpp.obj"
+}
+]

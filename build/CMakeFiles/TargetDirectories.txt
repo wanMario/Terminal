@@ -1,0 +1,5 @@
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/TerminalUI.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/terminal_demo.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/test.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/edit_cache.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/rebuild_cache.dir

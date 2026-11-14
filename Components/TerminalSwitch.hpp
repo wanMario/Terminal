@@ -9,6 +9,7 @@
 #include <string>
 
 #include "../Core/TerminalMessage.hpp"
+#include "../Core/TerminalMouse.hpp"
 #include "../Utils/TerminalChar.hpp"
 #include "TerminalText.hpp"
 
@@ -27,6 +28,7 @@ namespace Terminal {
         Switch() {
             signature = "UISwitch";
             focusable = true;
+            mouseCursor = MouseCursor::Hand;
             layout.height = 1;
             style = Style(Theme::Current().text, Theme::Current().background);
         }
@@ -93,17 +95,51 @@ namespace Terminal {
             return UI::OnMessage(msg);
         }
 
+        //---------- 鼠标 ----------
+        // 整行都是热区：悬停高亮，左键按下即投递 toggle（点击的落点不在文字上也算）
+        void OnMouseEnter() override { m_hover = true; Invalidate(); }
+        void OnMouseLeave() override {
+            if (m_hover || m_pressed) { m_hover = false; m_pressed = false; Invalidate(); }
+        }
+
+        bool OnMouse(const xMouse& ev) override {
+            if (!isEnabled) return false;
+            switch (ev.action) {
+            case MouseAction::Move:
+                if (!m_hover) { m_hover = true; Invalidate(); }
+                return true;
+            case MouseAction::Down:
+                if (!ev.IsLeft()) return false;
+                m_hover = true;
+                m_pressed = true;
+                Invalidate();
+                return true;
+            case MouseAction::Up:
+                if (!m_pressed) return false;
+                m_pressed = false;
+                Invalidate();
+                if (HitTest(ev.x, ev.y)) MessageQueue::PostFrom(this, this, "toggle");
+                return true;
+            default:
+                return false;
+            }
+        }
+
         void OnRender(ConsoleBackBuffer& buf) override {
             const Theme& th = Theme::Current();
             const Color bg = EffectiveBackground();
             const Color fg = value ? onColor : offColor;
             buf.FillStyle(bounds, Style(th.text, bg));
-            if (focused) buf.FillStyle(bounds, Style(th.text, th.hoverBg));
+            if (focused || m_hover) buf.FillStyle(bounds, Style(th.text, th.hoverBg));
             const std::string shown = label.empty()
                 ? std::string("[ ") + (value ? onText : offText) + " ]"
                 : label + " [ " + (value ? onText : offText) + " ]";
             buf.WriteText(Left(), Top(), Utf8::Truncate(shown, Width()), Style(fg, bg).SetBold(), Width());
         }
+
+    private:
+        bool m_hover{ false };
+        bool m_pressed{ false };
     };
 
     using UISwitch = Switch;

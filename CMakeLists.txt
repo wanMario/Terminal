@@ -34,6 +34,12 @@ set_target_properties(TerminalUI PROPERTIES
 add_executable(terminal_demo examples/demo.cpp)
 target_link_libraries(terminal_demo PRIVATE TerminalUI)
 
+# MinGW 运行时静态链接：避免系统 PATH 中其他 MinGW（例如 CLion 自带旧版）
+# 抢先加载旧 libstdc++ / libgcc / libwinpthread，导致双击 exe 时报“找不到入口点”。
+if (WIN32 AND NOT MSVC)
+    target_link_options(terminal_demo PRIVATE -static)
+endif()
+
 # Windows 下额外依赖：kernel32（控制台 API）+ user32（原始输入 / 窗口消息 / 像素坐标换算）
 if (WIN32)
     target_link_libraries(TerminalUI PUBLIC kernel32 user32)

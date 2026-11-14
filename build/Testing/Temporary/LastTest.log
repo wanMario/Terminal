@@ -1,0 +1,231 @@
+Start testing: Nov 16 22:08 �й���׼ʱ��
+----------------------------------------------------------
+1/1 Testing: selftest
+1/1 Test: selftest
+Command: "D:/wan1/C++/Libraries/ToolHead/Terminal/build/terminal_demo.exe" "--selftest"
+Directory: D:/wan1/C++/Libraries/ToolHead/Terminal/build
+"selftest" start time: Nov 16 22:08 �й���׼ʱ��
+Output:
+----------------------------------------------------------
+[selftest] color
+  [PASS] 静态库版本符号
+  [PASS] hex #FF0000 -> 12(red)
+  [PASS] name cyan -> 11
+  [PASS] parse 非法名不崩溃
+  [PASS] rgb(0,0,255) -> 亮蓝属性位
+  [PASS] index 15 hex
+  [PASS] style 红/黑（亮红）
+  [PASS] style 黑/红（亮红背景）
+  [PASS] bold = 高亮强度位
+[selftest] utf8
+  [PASS] ascii 宽度
+  [PASS] CJK 宽度 2+2
+  [PASS] 按宽度截断
+  [PASS] UTF-8 解码
+[selftest] buffer
+  [PASS] 宽字符写入首格
+  [PASS] 宽字符占 2 格
+  [PASS] 宽字符后接半角
+  [PASS] 属性写入
+  [PASS] 裁剪区内不越界写
+  [PASS] 区域填充
+  [PASS] ANSI 导出
+  [PASS] 真彩前景 38;2 导出
+  [PASS] 真彩背景 48;2 导出
+  [PASS] 16 色模式不发 38;2
+[selftest] layout
+  [PASS] 面板占满可用格
+  [PASS] 内边距生效
+  [PASS] 容器默认拉伸交叉轴（文本占满宽度）
+  [PASS] 子元素挂载
+  [PASS] Row 固定宽度
+  [PASS] Row 间距生效
+  [PASS] grow 吃掉剩余宽度
+  [PASS] 边框 + 内边距叠加
+  [PASS] 边框内容区尺寸
+  [PASS] 嵌套子元素定位
+[selftest] components
+  [PASS] 滑杆比例
+  [PASS] 改范围后值被夹紧
+  [PASS] → 加一步
+  [PASS] Enter 触发按钮
+  [PASS] 输入框写入 + 光标
+  [PASS] 退格
+  [PASS] Home 后插入
+  [PASS] 文本换行
+[selftest] layout spec & theme
+  [PASS] 主题换色可用
+  [PASS] 按名切换主题
+[selftest] json
+  [PASS] Json 载入顶层元素
+  [PASS] 根节点数量
+  [PASS] panel 子元素 3 个
+  [PASS] IsValidElement 通过
+  [PASS] 空数组合法
+  [PASS] auto 类型非法
+  [PASS] 类型注册表可查询
+  [PASS] 管理器可作为根布局
+[selftest] focus
+  [PASS] 可聚焦元件收集
+  [PASS] 首个焦点
+  [PASS] Tab 切换焦点
+  [PASS] 未消费的按键返回 false
+[selftest] mouse
+  [PASS] 命中测试落到按钮
+  [PASS] 容器外不命中
+  [PASS] 悬停进入按钮
+  [PASS] 按钮 hover 状态
+  [PASS] 按下被捕获
+  [PASS] 仅按下不触发点击
+  [PASS] 按钮内抬起触发点击
+  [PASS] 抬起后释放捕获
+  [PASS] 点击轨道右端拉高数值
+  [PASS] 输入框光标不越界
+  [PASS] 输入框可聚焦
+[selftest] mouse record
+  [PASS] 键盘记录 -> 'A'
+  [PASS] 键盘记录 -> 中文码点
+  [PASS] 键盘记录 -> ←
+  [PASS] 鼠标移动记录 -> 坐标/按键
+  [PASS] 左键按下记录
+  [PASS] 左键抬起记录
+  [PASS] 滚轮记录 -> delta
+[selftest] slider precision
+  [PASS] 像素位移 -> 亚格坐标（半格精度）
+  [PASS] 字体尺寸为 0 时保持基准不抖动
+  [PASS] 反向像素位移 -> 亚格坐标
+  [PASS] 格宽/格高由相邻事件自标定
+  [PASS] 无原始输入退回整数格
+  [PASS] Fraction 按亚格换算
+  [PASS] 亚格位置 -> 75%（连续比例）
+  [PASS] 同一格内亚格位移也改变数值
+  [PASS] 单元格入口与亚格入口一致
+  [PASS] 轨道最左 = 最小值
+  [PASS] 轨道最右 = 最大值
+  [PASS] 路由按下按亚格取值
+  [PASS] 格内拖拽连续改值
+  [PASS] 抬起不把数值弹回格边界
+  [PASS] 拖出右边界仍继续拖拽并夹到最大值
+  [PASS] 拖出左边界仍继续拖拽并夹到最小值
+  [PASS] 抬起后结束拖拽
+[selftest] background inherit
+  [PASS] 文本继承父容器背景
+  [PASS] 按钮继承父容器背景
+  [PASS] 滑杆继承父容器背景
+  [PASS] 焦点态不反背景（只反文字色）
+  [PASS] 父容器换色后子元件自动跟随
+[selftest] textinput v2
+  [PASS] 标签宽度 = 文字 + 一个空格
+  [PASS] 标签 + 框 的整体宽度
+  [PASS] 中间插入多字节不乱序
+  [PASS] 框外标签渲染在左侧
+  [PASS] 宽字符之后的文字位置正确（不再错位）
+  [PASS] 替换模式覆盖光标处一个字符
+  [PASS] 输入后进入撤销栈
+  [PASS] Ctrl+Z 撤销
+  [PASS] Ctrl+Y / Ctrl+Shift+Z 重做
+  [PASS] Ctrl+A 全选
+  [PASS] Shift+→ 扩展选区
+  [PASS] 选择模式下方向键直接扩选
+  [PASS] 多行按时行数自动拓高（3 行 + 边框）
+  [PASS] 超过 maxLines(6) 高度封顶
+  [PASS] 行数统计
+  [PASS] 多行模式下 Enter 换行而不是提交
+  [PASS] 超过可视行数后输入框内部滚动
+  [PASS] ↑ 在多行间上移
+  [PASS] ↓ 在多行间下移
+  [PASS] 鼠标点击按框内列定位光标
+  [PASS] SetValue 按 maxLength 截断
+  [PASS] 调小 maxLength 立刻截断现有内容
+  [PASS] 连续插入不会超过 maxLength
+  [PASS] Ctrl+← 按词移动且不删除任何文字
+  [PASS] 光标靠近右边界时左右都留出上下文（scroll=8）
+  [PASS] MENU 键打开编辑菜单
+  [PASS] 菜单 Enter 执行后关闭
+[selftest] box fallback
+  [PASS] ASCII 模式横线降级
+  [PASS] ASCII 模式竖线降级
+  [PASS] Blank 不参与降级
+  [PASS] 圆点 ● 降级为 ·
+  [PASS] 圆点 UTF-8 降级
+  [PASS] Unicode 模式保留圆角
+  [PASS] Unicode 模式保留圆点
+[selftest] image
+  [PASS] SetPixels 接收 2x2 RGBA
+  [PASS] 像素尺寸正确
+  [PASS] 每格用 ▀ 合成上下两个像素
+  [PASS] WIC 解码 PNG 成功
+  [PASS] PNG 尺寸 24x24
+[selftest] scroll view
+  [PASS] 内容 10 行 / 视口 3 行 -> 最大滚动 7
+  [PASS] 内容溢出时显示竖向滚动条
+  [PASS] SetScroll 生效
+  [PASS] 滚轮事件被滚动容器消费
+  [PASS] 向下滚轮 +3 行并被夹到尾部
+  [PASS] Home 回到顶部
+  [PASS] 滚动后子元素按 scroll 上移
+  [PASS] MouseRouter 把滚轮冒泡给 ScrollView
+  [PASS] 路由后的滚轮同样夹在最大滚动值
+[selftest] message queue
+  [PASS] 交互回调只负责入队
+  [PASS] 主循环一次排空队列
+  [PASS] 消息携带的对象收到并处理自己的消息
+  [PASS] click 消息驱动按钮 Trigger
+  [PASS] 处理完后队列为空
+  [PASS] 同一对象连续消息按顺序生效
+  [PASS] 消息由控件地址发出并可定向投递
+  [PASS] 消息记录发送者地址
+  [PASS] 消息携带 Json 对象负载
+[selftest] page holder
+  [PASS] 嵌套页面找到父 PageHolder
+  [PASS] 消息进入子页面独立队列
+  [PASS] 子页面处理后清空本页队列
+  [PASS] 未消费消息冒泡到上一层页面
+  [PASS] 根页面处理完后队列为空
+[selftest] switch / choices / window
+  [PASS] Switch 通过消息队列切换状态
+  [PASS] Switch change 通知处理完毕
+  [PASS] Switch 鼠标按下被消费
+  [PASS] Switch 鼠标抬起被消费
+  [PASS] Switch 鼠标点击切换状态
+  [PASS] 单选 Choices 选中指定项
+  [PASS] Choices 鼠标悬停被消费
+  [PASS] Choices 鼠标点击被消费
+  [PASS] Choices 鼠标点击选中对应行
+  [PASS] 多选 Choices 可同时选中多项
+  [PASS] 滚动容器内单选项可鼠标点击
+  [PASS] 滚动后子元素立即上移
+  [PASS] 滚动后的单选项仍可鼠标点击
+  [PASS] 宽内容自动出现横向滑条
+  [PASS] 横向滑条优先于内容命中
+  [PASS] 横向滚动子元素立即左移
+  [PASS] Window 按指定位置摆放
+  [PASS] 标题栏按下进入拖拽
+  [PASS] Window 标题栏拖拽移动
+  [PASS] 8 个方向把手均可命中
+  [PASS] Ctrl 点边框进入缩放
+  [PASS] 缩放拖拽被消费
+  [PASS] 缩放改变窗口尺寸
+  [PASS] 缩放抬起结束
+  [PASS] OverlayHost 窗口外不拦截鼠标
+  [PASS] OverlayHost 内窗口初始宽度
+  [PASS] OverlayHost 右边框进入缩放
+  [PASS] OverlayHost 内可向右放大窗口
+  [PASS] Window 关闭消息生效
+[selftest] mouse cursor
+  [PASS] 输入框指针为 IBeam
+  [PASS] 按钮指针为 Hand
+  [PASS] 滑杆指针为 Hand
+  [PASS] 窗口角点指针为 SizeAll
+  [PASS] 窗口左边框指针为 SizeWE
+  [PASS] 窗口上边框指针为 SizeNS
+[selftest] ALL PASSED
+<end of output>
+Test time =   0.16 sec
+----------------------------------------------------------
+Test Passed.
+"selftest" end time: Nov 16 22:08 �й���׼ʱ��
+"selftest" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 16 22:08 �й���׼ʱ��

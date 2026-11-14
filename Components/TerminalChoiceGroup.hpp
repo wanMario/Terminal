@@ -29,6 +29,7 @@ namespace Terminal {
         ChoiceGroup() {
             signature = "UIChoiceGroup";
             focusable = true;
+            mouseCursor = MouseCursor::Hand;
             layout.height = 0;
             style = Style(Theme::Current().text, Theme::Current().background);
         }
@@ -113,7 +114,17 @@ namespace Terminal {
         }
 
         bool OnMouse(const xMouse& ev) override {
-            if (ev.action != MouseAction::Down || !ev.IsLeft() || options.empty()) return false;
+            if (!isEnabled || options.empty()) return false;
+            if (ev.action == MouseAction::Move) {
+                const int row = ev.y - Top();
+                const int next = (row >= 0 && row < static_cast<int>(options.size())) ? row : -1;
+                if (next != m_hoverRow) {
+                    m_hoverRow = next;
+                    Invalidate();
+                }
+                return true;
+            }
+            if (ev.action != MouseAction::Down || !ev.IsLeft()) return false;
             const int row = ev.y - Top();
             if (row < 0 || row >= static_cast<int>(options.size())) return false;
             cursor = row;
@@ -121,6 +132,11 @@ namespace Terminal {
             payload["index"] = Json(static_cast<double>(row));
             MessageQueue::PostFrom(this, this, "toggle", std::move(payload));
             return true;
+        }
+
+        void OnMouseEnter() override { m_hover = true; Invalidate(); }
+        void OnMouseLeave() override {
+            if (m_hover || m_hoverRow >= 0) { m_hover = false; m_hoverRow = -1; Invalidate(); }
         }
 
         bool OnMessage(const Message& msg) override {
@@ -184,18 +200,23 @@ namespace Terminal {
                 if (y >= Bottom()) break;
                 const Color fg = selected[i] ? th.accent : th.text;
                 const bool rowFocus = focused && i == cursor;
-                if (rowFocus) buf.FillStyle(Bounds{ Left(), y, Width(), 1 }, Style(fg, th.hoverBg));
+                const bool rowHover = m_hover && i == m_hoverRow;
+                if (rowFocus || rowHover) buf.FillStyle(Bounds{ Left(), y, Width(), 1 }, Style(fg, th.hoverBg));
                 const std::string mark = multi
                     ? (selected[i] ? "[x]" : "[ ]")
                     : (selected[i] ? "(*)" : "( )");
                 const std::string line = mark + " " + options[i];
                 buf.WriteText(Left(), y, Utf8::Truncate(line, Width()),
-                              Style(fg, rowFocus ? th.hoverBg : bg).SetBold(rowFocus), Width());
+                              Style(fg, (rowFocus || rowHover) ? th.hoverBg : bg).SetBold(rowFocus), Width());
             }
             if (options.empty() && showHint) {
                 buf.WriteText(Left(), Top(), Utf8::Truncate("(empty)", Width()), Style(th.textMuted, bg), Width());
             }
         }
+
+    private:
+        bool m_hover{ false };
+        int m_hoverRow{ -1 };
     };
 
     using UISingleChoice = ChoiceGroup;

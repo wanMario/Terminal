@@ -6,6 +6,7 @@
 #pragma once
 
 #include <cstdlib>
+#include <cstring>
 #include <string>
 #include <windows.h>
 
@@ -42,30 +43,61 @@ namespace Terminal {
         inline bool g_asciiFallbackAutoResult = false;
         inline bool g_asciiFallbackDetected = false;
 
-        // 旧 conhost（包括 Win10 默认控制台）默认没有 WT_SESSION / TERM_PROGRAM，
-        // 这类环境统一走 ASCII 边框，避免制表符在非 UTF-8 / 非 ANSI 终端里变方块。
+        // Windows 11（NT 10.0 build 22000+）的 conhost 已经能稳定显示 Unicode
+        // 制表符；此时不应该再因为「没有 WT_SESSION 环境变量」就退回 ASCII。
+        inline bool IsWindows11OrLater() {
+            OSVERSIONINFOW info{};
+            info.dwOSVersionInfoSize = sizeof(info);
+            HRESULT(WINAPI* raw)(OSVERSIONINFOW*) = nullptr;
+            FARPROC proc = GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "RtlGetVersion");
+            if (proc == nullptr) return false;
+            static_assert(sizeof(raw) == sizeof(proc), "function pointer size mismatch");
+            std::memcpy(&raw, &proc, sizeof(raw));
+            const LONG status = raw(&info);
+            return status >= 0 && info.dwMajorVersion >= 10 && info.dwBuildNumber >= 22000;
+        }
+
+        // 当前输出是否已经打开 VT（说明是现代终端，而不是只支持 16 色属性的老 conhost）
+        inline bool OutputSupportsVt() {
+            const HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+            if (h == nullptr || h == INVALID_HANDLE_VALUE) return false;
+            DWORD mode = 0;
+            if (!GetConsoleMode(h, &mode)) return false;
+            return (mode & ENABLE_VIRTUAL_TERMINAL_PROCESSING) != 0;
+        }
+
+        // 是否为支持 ANSI / Unicode 制表符的现代终端。
+        // 只看终端能力，不再按帧扫描缓冲区、猜测“有没有排版错乱”。
+        inline bool IsAnsiSupported() {
+            if (const char* wt = std::getenv("WT_SESSION"); wt && *wt) return true;
+            if (const char* tp = std::getenv("TERM_PROGRAM"); tp && *tp) return true;
+            if (const char* ce = std::getenv("ConEmuANSI"); ce && *ce) return true;
+            if (const char* ansi = std::getenv("ANSICON"); ansi && *ansi) return true;
+            if (const char* term = std::getenv("TERM"); term && *term) {
+                const std::string t(term);
+                if (t.find("xterm") != std::string::npos ||
+                    t.find("screen") != std::string::npos ||
+                    t.find("tmux") != std::string::npos ||
+                    t.find("cygwin") != std::string::npos) return true;
+            }
+
+            // 输出代码页不是 UTF-8 时，制表符必然显示不了
+            if (GetConsoleOutputCP() != CP_UTF8) return false;
+            // Win11 / 已开启 VT 的现代终端：保留 Unicode 边框
+            if (IsWindows11OrLater()) return true;
+            if (OutputSupportsVt()) return true;
+            return false;
+        }
+
+        // 旧 conhost（包括 Win10 默认控制台）默认没有 ANSI/VT 能力，
+        // 这类环境统一走 ASCII 边框，避免制表符变方块。
         inline bool DetectAsciiFallback() {
             if (const char* v = std::getenv("TERMINAL_BOXES"); v && *v) {
                 const std::string s(v);
                 if (s == "ascii" || s == "0") return true;
                 if (s == "unicode" || s == "utf8" || s == "1") return false;
             }
-            if (const char* wt = std::getenv("WT_SESSION"); wt && *wt) return false;
-            if (const char* tp = std::getenv("TERM_PROGRAM"); tp && *tp) return false;
-            if (const char* ce = std::getenv("ConEmuANSI"); ce && *ce) return false;
-            if (const char* term = std::getenv("TERM"); term && *term) {
-                const std::string t(term);
-                if (t.find("xterm") != std::string::npos ||
-                    t.find("screen") != std::string::npos ||
-                    t.find("tmux") != std::string::npos ||
-                    t.find("cygwin") != std::string::npos) return false;
-            }
-            if (const char* ansi = std::getenv("ANSICON"); ansi && *ansi) return false;
-
-            // 输出代码页不是 UTF-8 时也必然显示不了制表符
-            if (GetConsoleOutputCP() != CP_UTF8) return true;
-            // Windows 10 / 老 conhost：没有现代终端标记，按兼容模式处理
-            return true;
+            return !IsAnsiSupported();
         }
 
         inline bool AsciiFallback() {

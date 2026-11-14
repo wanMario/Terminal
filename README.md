@@ -39,7 +39,7 @@ Terminal/
 │   ├── TerminalButton.hpp       # Button    按钮（文字/边框色可配、聚焦加粗、交互换 hot 边框色）
 │   ├── TerminalTextInput.hpp    # TextInput 输入框（选区/撤销重做/剪贴板/多行/MENU 菜单）
 │   ├── TerminalSlider.hpp       # Slider    滑杆（键盘步进、比例填充）
-│   ├── TerminalScrollView.hpp   # ScrollView 滚动容器（竖向滚动条 + 滚轮 + 拖动）
+│   ├── TerminalScrollView.hpp   # ScrollView 滚动容器（横竖滚动条 + 滚轮 + 拖动）
 │   ├── TerminalImage.hpp        # UIImage   半格像素图片（PNG/JPG，WIC 解码）
 │   ├── TerminalBorder.hpp       # Border    边框容器（标题、让出边框的内容区）
 │   ├── TerminalPanel.hpp        # Panel     面板容器（标题栏、内边距、方向）
@@ -48,6 +48,7 @@ Terminal/
 │   ├── TerminalSwitch.hpp       # Switch    开关（ON/OFF，消息驱动）
 │   ├── TerminalChoiceGroup.hpp  # ChoiceGroup 单选/多选（键盘 + 鼠标 + 消息）
 │   ├── TerminalWindow.hpp       # Window    可拖标题栏/可关闭弹窗，内容区可排版
+│   ├── TerminalOverlayHost.hpp  # OverlayHost 悬浮层（不占布局，只让子窗口命中）
 │   └── TerminalPageHolder.hpp   # PageHolder 可嵌套页面 + 每页独立局部队列
 ├── src/TerminalUI.cpp           # 静态库装配单元（提供 Terminal::Version() 符号）
 ├── examples/demo.cpp            # 演示 + 自检 + 交互 + 布局转储 + 性能基准
@@ -93,15 +94,17 @@ cmake --build build --target TerminalUI
 g++ -std=c++20 -Wall -Wextra `
     -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
     -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
-    app.cpp -Lbuild/lib -lTerminalUI -o app.exe
+    app.cpp -Lbuild/lib -lTerminalUI -static -o app.exe
 ```
 
-`-lTerminalUI` 要放在源文件/目标文件后面，静态链接才会正确解析。
+`-lTerminalUI` 要放在源文件/目标文件后面，静态链接才会正确解析。MinGW 加上 `-static`
+可以把 libstdc++ / libgcc / libwinpthread 一起静态链入，避免系统里其他 MinGW 的旧 DLL
+抢先加载导致“找不到入口点”。
 
 ### 直接用 g++
 
 ```powershell
-g++ -std=c++20 -Wall -Wextra `
+g++ -std=c++20 -Wall -Wextra -static `
     -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
     -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
     examples/demo.cpp src/TerminalUI.cpp `
@@ -111,7 +114,7 @@ g++ -std=c++20 -Wall -Wextra `
 也可以改用静态库（先构建 `TerminalUI`）：
 
 ```powershell
-g++ -std=c++20 -Wall -Wextra `
+g++ -std=c++20 -Wall -Wextra -static `
     -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
     -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
     examples/demo.cpp -Lbuild/lib -lTerminalUI -o demo.exe
@@ -184,13 +187,17 @@ int main() {
 | `Text` | `SetText / GetText / SetLines / SetAlign / SetStyle` | — | — |
 | `Button` | `SetLabel / OnClick / SetFrame / SetTextColor / SetBorderColor / SetHotBorderColor / SetColors`；聚焦加粗、交互换边框色 | Enter、Space | 悬停高亮、点击触发 |
 | `TextInput` | `SetLabel / SetValue / GetValue / SetPlaceholder / SetPrefix / SetPassword / SetMaxLength / SetMultiline / SetMaxLines / SetOverwrite / SetSelectionMode / OnSubmit / OnChange` | 方向键、Home/End、退格、Delete、UTF-8 输入、`Insert` 插入/替换、`Ctrl+C/V/X/Z/Y/A`、`Shift+方向键` 扩选 | 点击定位光标、拖选 |
-| `Slider` | `SetRange / SetValue / SetStep / OnChanged`、`Ratio()`、`Track()`、`SetByPosition(cellX)` | ←→、Home/End、PageUp/PageDown、`h`/`l` | 点击跳值、按住拖动，**亚格精度**（每像素可改值） |
-| `ScrollView` | `SetScroll / ScrollBy / Page / SetWheelStep / SetShowScrollbar`、`MaxScroll()` | PageUp/PageDown、Home/End | 滚轮、点/拖右侧竖向滚动条 |
+| `Slider` | `SetRange / SetValue / SetStep / OnChange / OnCommit / IsDragging`、`Ratio()`、`Track()`、`SetByPosition(cellX)` | ←→、Home/End、PageUp/PageDown、`h`/`l` | 点击跳值、按住拖动，**亚格精度**（每像素可改值）；`OnCommit` 在抬起时提交昂贵的 seek/speed 操作 |
+| `ScrollView` | `SetScroll / SetScrollX / ScrollBy / ScrollByX / Page / SetWheelStep / SetShowScrollbar / SetShowHScrollbar`、`MaxScroll() / MaxScrollX()` | PageUp/PageDown、Home/End、←/→ | 滚轮（Shift+滚轮横向）、点/拖右侧竖向滚动条、底部横向滚动条 |
 | `UIImage` | `SetImage(path) / SetPixels(w,h,rgba) / SetFit(Contain·Cover·Stretch) / Clear()` | — | — |
 | `Border` | `SetChars / SetTitle / SetTitleAlign / SetBorderColor` | — | — |
 | `Panel` | `SetFlow / SetGap / SetPadding / SetTitle / SetFill` | — | — |
 | `Divider` | `SetTitle / SetChars / SetColors(line, title)`，无标题时整行横线 | — | — |
 | `Badge` | `SetText / SetDot / SetColors(bg, fg)`，宽度 = 文本 + 圆点/内边距 | — | — |
+| `Switch` | `SetLabel / SetValue / SetColors(on, off) / OnChange` | Space/Enter | 整行悬停高亮、点击切换 |
+| `ChoiceGroup` | `SetOptions / SetMulti / SetSelected / OnChange` | Up/Down、Space/Enter | 悬停行高亮、点击行选中/切换 |
+| `OverlayHost` | `AddChild / Arrange`、`HitTest` 只覆盖可见子窗口 | — | 不占布局高度的悬浮层，窗口可拖到全屏，窗口外点击穿透 |
+| `Window` | `SetTitle / SetFrame / MoveTo / Show / SetClosable / SetDraggable / SetResizable / SetMinSize` | Esc 由宿主处理 | 标题栏拖动、右上角 `[x]` 关闭；按住 Ctrl 边框高亮 8 个把手后可拖拽改尺寸，内容区子控件照常接收鼠标 |
 
 旧名兼容：`UIText`、`UIButton`、`UITextInput`、`UISlider`、`UIScrollView`、`UIImageView`、`UIBorder`、`UIPanel`、
 `UIDivider`、`UIBadge` 均为 `using` 别名；
@@ -242,13 +249,16 @@ demo 的交互模式默认就是「自动」：能真彩就真彩，不能就 16
 这些字符可能变方块或乱码，所以库内置了自动降级：**所有边框统一换成
 `+ - |` 的 `Box::Ascii`**。
 
-判定顺序（`Box::DetectAsciiFallback()`）：
+判定顺序（`Box::IsAnsiSupported()` / `Box::DetectAsciiFallback()`）：
 
 1. `TERMINAL_BOXES=ascii` 强制 ASCII，`TERMINAL_BOXES=unicode` 强制 Unicode；
-2. `WT_SESSION`（Windows Terminal）、`TERM_PROGRAM`（VS Code 等）、
-   `ConEmuANSI`、`ANSICON`、`TERM=xterm/screen/tmux/cygwin` → 现代终端，保留 Unicode；
+2. `WT_SESSION`、`TERM_PROGRAM`、`ConEmuANSI`、`ANSICON`、`TERM=xterm/screen/tmux/cygwin` → 现代终端，保留 Unicode；
 3. 输出代码页不是 UTF-8 → ASCII；
-4. 其余没有现代终端标记的环境（Win10 默认 conhost 等）→ ASCII。
+4. Win11（build 22000+）或已经打开 `ENABLE_VIRTUAL_TERMINAL_PROCESSING` 的现代终端 → 保留 Unicode；
+5. 其余没有 ANSI 能力的环境（Win10 默认 conhost 等）→ ASCII。
+
+> 判定只看终端能力，不扫描缓冲区内容，所以 CJK 标题、悬浮窗口遮挡、
+> 滑杆 `●` 紧贴边框都不会再触发兼容模式。
 
 降级只换边框字符和圆点，文字、颜色、标题、布局都不变：边框统一成
 `+ - |`，Badge 状态点 / Slider 滑块 / demo 状态文字里的 `●` 换成窄圆点 `·`
@@ -341,7 +351,8 @@ in->OnChange([](const std::string& v){ /* 每次编辑 */ });
 ### 滚动容器（ScrollView）
 
 `ScrollView` 是 Column 容器：子元素按完整内容高度排布，再整体上移 `scroll` 行，
-超出部分靠 `UI::Render` 的裁剪挡住；内容溢出时右侧自动出现竖向滚动条。
+横向超过视口时整体左移 `scrollX` 列，超出部分靠 `UI::Render` 的裁剪挡住。
+内容溢出时右侧自动出现竖向滚动条，底部自动出现横向滚动条，二者互不重叠。
 
 ```cpp
 auto sc = std::make_shared<ScrollView>();
@@ -354,6 +365,11 @@ sc->AddChild(row2);
 - **滚轮**：`OnMouse` 收到 `MouseAction::Wheel`，`wheelDelta / 120 * wheelStep`
   换算成行数（向上为正 → `scroll` 减小），事件冒泡到最近的 ScrollView。
 - **竖向滚动条**：轨道 `│` + 滑块 `█`；点轨道空白直接跳到该位置，按住滑块可拖动，
+  拖动时用 `ev.FineY()` 的亚格比例换算，滚轮一格为 `wheelStep` 行。
+- **横向滚动条**：轨道 `─` + 滑块 `█`；内容自然宽度超过视口时自动出现，点/拖行为同上，
+  使用 `ev.FineX()`；`Shift+滚轮` 按 `wheelStepX` 横向滚动，焦点在容器时 ←/→ 逐列移动。
+- **滚动条几何**：竖条只占视口高度（不会侵入横向条），横条只占视口宽度（不会侵入竖向条），
+  右下角不会互相覆盖。
   拖动使用 `FineY()` 的亚格坐标，手感连续。
 - **键盘**：`PageUp/PageDown` 翻一屏、`Home/End` 到顶/底。
 - **消息**：`scrollTo` / `scrollBy` / `page`，可被消息队列驱动。
@@ -488,24 +504,46 @@ choice->SetMulti(false);                 // true = 复选框组
 choice->onChange = [](const std::vector<int>& selected) { /* ... */ };
 
 auto win = std::make_shared<Window>("设置", 36, 12);
-win->SetClosable(true).SetDraggable(true);
+win->SetClosable(true).SetDraggable(true).SetResizable(true).SetMinSize(24, 8);
 win->AddChild(sw);
 win->MoveTo(8, 4);
 ```
 
-- `Switch`：Space/Enter 投递 `"toggle"`，`OnMessage("toggle")` 切换并发出 `"change"`；
-  也接受 `"set"` + `payload.value`。
-- `ChoiceGroup`：Up/Down 移动，Space/Enter 或鼠标点击行投递 `"toggle"`；单选会清空其他项，
-  多选独立切换；变化后发出带 `indices / index / multi` 的 `"change"`。
+- `Switch`：Space/Enter 或鼠标左键按下/抬起投递 `"toggle"`，`OnMessage("toggle")` 切换并发出 `"change"`；
+  也接受 `"set"` + `payload.value`；整行都是鼠标热区，悬停有底色反馈。
+- `ChoiceGroup`：Up/Down 移动，Space/Enter 或鼠标点击行投递 `"toggle"`，悬停行高亮；单选会清空其他项，
+  多选独立切换；变化后发出带 `indices / index / multi` 的 `"change"`。demo 左卡片的滚动区里同时放了
+  单选（暗色/亮色/霓虹）和多选（高对比/减少动画/紧凑模式）两个实例。
 - `Window`：标题栏左键拖拽（内部更新 `windowPos` / bounds），右上角 `[x]` 或消息 `"close"` 关闭；
-  内容区通过 `ContentBounds()` 让出边框和标题栏，子元素照常布局。它仍是**父容器内部**的
-  浮动面板，不会突破 `UI::Render` 的 `PushClip(bounds)`。
+  `SetDraggable(false)` 可关掉标题栏拖动，`SetResizable(true)` 才启用缩放（默认关闭）。
+  缩放时按住 Ctrl 并把鼠标移到边框，边框转为 warning 色并显示 8 个把手（4 角 + 4 边中点，
+  均为单宽的 `+`，避免 `◆` 在部分 CJK 终端被按双宽处理而误触发 ASCII 兼容），
+  从任意把手拖拽即可改宽高；`SetMinSize` 给最小尺寸，
+  窗口不会越出父容器，拖拽过程中内容布局在下一帧收敛。demo 的 `MusicWindow` 已开启并设为 32×10 起。
+  内容区通过 `ContentBounds()` 让出边框和标题栏，子元素照常布局。它是**父容器内部**的浮动面板，
+  受 `UI::Render` 的 `PushClip(bounds)` 限制；库内置的 `OverlayHost` 把它托到根级，
+  从而实现全屏拖动与点击穿透。
+
+`OverlayHost` 现在属于库组件（`TerminalOverlayHost.hpp`）：
+
+```cpp
+auto overlay = std::make_shared<OverlayHost>();
+auto win = std::make_shared<Window>("设置", 36, 12);
+win->SetResizable(true);
+win->MoveTo(8, 4);
+overlay->AddChild(win);
+root->AddChild(overlay);
+```
+
+它自身不占布局高度，`bounds` 始终是整块画布，因此 `Window` 缩放时
+`parent->GetBounds()` 不会被缩成窗口自身（这是“只能缩小、放大被夹住”的根因）；
+命中测试只遍历可见子窗口，窗口外的鼠标会穿透到下层控件。
 
 ### 音频（AudioPlayer）
 
 ```cpp
 AudioPlayer player;
-player.Open("music.mp3");          // WAV / MP3，MF 不支持时自动尝试 MCI
+player.Open("music.mp3");          // MP3 / FLAC / WAV / M4A；MF 不支持时自动尝试 MCI
 player.Play();
 player.SetSpeed(1.5);              // 0.25x ~ 4x
 player.Pause();
@@ -518,27 +556,35 @@ player.Update();
 std::cout << player.BackendName() << " " << player.Position() << "/" << player.Duration();
 ```
 
-- 首选 Media Foundation（`mfplay.dll`），`SetSpeed` 实测对 WAV 返回成功；MCI 只作为兜底。
+- 首选 Media Foundation（`mfplay.dll`），实测 MP3 / FLAC / WAV 均可播放，`SetSpeed` 对 WAV 返回成功；MCI 只作为兜底。
 - 两个后端都用 `LoadLibraryW` + `GetProcAddress`，使用方不需要额外 `-lwinmm/-lmfplay`。
 - `SpeedSupported()` 可查询当前文件和后端是否接受倍速；MCI 对 waveaudio 的 `speed` 通常不支持。
 - `OnMessage` 支持 `play / pause / resume / stop / seek / speed`，方便接页面消息队列。
+- demo 的 `MusicWindow` 直接扫描 `D:\CloudMusic`（递归，MP3/FLAC/WAV/M4A/AAC/OGG/WMA），
+  用 `ChoiceGroup` 选曲、`Slider` 拖进度 / 调倍速，播放/暂停/上一首/下一首/停止全部走按钮与消息；
+  `OnUpdate()` 每帧泵 MF 消息，播完自动下一首。
 
-### 排版守卫（边框对齐）
+### 边框兼容（只判断 ANSI / Unicode 能力）
 
-`ConsoleBackBuffer::EnsureAlignment()` 在每帧刷新前扫描宽字符：
-
-1. 如果 `●` 或全角字符紧邻非空格（终端会把它按双宽渲染，后面的边框/文字会被顶歪），
-   先把 `●` 换成窄圆点 `·`，其他全角字符换成空格，并清掉被占用的下一格；
-2. 发现异常时顺手调用 `Box::SetAsciiFallback(true)`，下一帧边框字符强制走 `Box::Ascii`；
-3. 返回 `AlignmentReport{ detected, fixed, switchedAscii }`，demo 在 `switchedAscii` 时
-   立即 `root->Invalidate()`，下一帧重绘成 ASCII 边框。
+库不再逐帧扫描缓冲区、猜测“宽字符有没有把边框顶歪”。兼容模式只在渲染入口
+按终端能力决定一次：
 
 ```cpp
-root->Render(buf);
-const auto rep = buf.EnsureAlignment();
-if (rep.switchedAscii) root->Invalidate();
-buf.FlushAuto();
+if (Terminal::Box::DetectAsciiFallback()) {
+    // 统一使用 + - | 边框（Box::Ascii）
+}
 ```
+
+`Box::IsAnsiSupported()` 的判定：
+
+1. `WT_SESSION`、`TERM_PROGRAM`、`ConEmuANSI`、`ANSICON`，或 `TERM` 含
+   `xterm / screen / tmux / cygwin` → 现代终端，保留 Unicode；
+2. 输出代码页不是 UTF-8 → ASCII；
+3. Win11（build 22000+）或已开启 `ENABLE_VIRTUAL_TERMINAL_PROCESSING` → 保留 Unicode；
+4. 其余旧 conhost → ASCII。
+
+`TERMINAL_BOXES=ascii` / `unicode` 仍可强制覆盖。这样可以避免悬浮 `Window` 盖住
+底层半个汉字、缩放把手 `+` 或滑杆 `●` 紧贴边框时，被误判成排版错乱而整屏切 ASCII。
 
 ### 鼠标交互
 
@@ -584,6 +630,11 @@ Mouse::Disable();                      // 恢复原控制台模式
   也不会因为 `OnMouseLeave` 断开拖拽；比例一律由 `SetByRatio` 夹到 `[0,1]`。
 - **滚轮**：`MOUSE_WHEELED` 被解析成 `MouseAction::Wheel` + `wheelDelta`（正数向上），
   从命中的元件一路冒泡；`ScrollView` 用 `wheelDelta / 120 * wheelStep` 换算成滚动行数。
+- **指针样式**：`UI::SetMouseCursor()` / `CursorAt()` 声明控件语义。默认输入框 `IBeam`，
+  按钮 / 开关 / 选项 / 滑杆 `Hand`，`ScrollView` 竖条 `SizeNS`、横条 `SizeWE`，
+  `Window` 四边 `SizeWE/SizeNS`、四角 `SizeAll`、标题栏 `SizeAll`。
+  `MouseRouter::ApplyCursor()` 在形状变化时调用 Win32 `SetCursor`；Windows Terminal / conhost
+  的指针由宿主窗口管理，部分环境会忽略该请求，此时仍保留控件自己的悬停高亮。
 - **滑杆的换算**：`Slider::SetByPosition(double cellX)` 与绘制严格对齐（轨道占
   `[trackX, trackX + trackW)`），点击/拖动都走亚格坐标；`SetByPixel(int)` 是整数格入口，等价兼容。
   120 列宽下 100 步的滑杆原来只有 ~20 个落点，现在每像素都能改值。
@@ -645,10 +696,11 @@ mgr.Arrange(Rect2Di{ 0, 0, 60, 20 });
 ## demo 的入口
 
 ```powershell
-terminal_demo --selftest     # 168 项逻辑自检（颜色/UTF-8/缓冲/布局/元件/边框降级/图片/滚动/消息/PageHolder/新控件/排版守卫）
+terminal_demo --selftest     # 192 项逻辑自检（颜色/UTF-8/缓冲/布局/元件/边框降级/图片/滚动双轴/消息/PageHolder/新控件/鼠标/指针样式/窗口缩放）
 terminal_demo --frame        # 渲染一帧，按 24 位真彩输出 ANSI（可重定向到文件检查配色）
 terminal_demo --dump         # 打印布局树（bounds + pref，排查布局问题）
-terminal_demo                # 交互：Tab 焦点、拖动 R/G/B 滑杆改昵称颜色、左卡片滚轮滚动、右卡片半格像素图标、Esc/q 退出
+terminal_demo                # 交互：Tab 焦点、拖动 R/G/B 滑杆改昵称颜色、左卡片滚轮滚动、右卡片半格像素图标、
+                             #       悬浮音乐 Window（D:\CloudMusic 选曲/播放/暂停/倍速/进度），Esc/q 退出
 terminal_demo --truecolor    # 强制走 ANSI 真彩刷新
 terminal_demo --mono         # 强制 16 色属性刷新（老 conhost / 远程终端排查用）
 terminal_demo --bench 200    # 渲染性能基准（脏标记 / 全量重绘 / ANSI 生成三条数据）
@@ -676,11 +728,11 @@ terminal_demo --bench 200    # 渲染性能基准（脏标记 / 全量重绘 / A
   队列是同步消费，没有延迟投递 / 优先级 / 后台线程调度。
 - MENU 键（`VK_APPS`）依赖终端把它作为按键记录送来；部分精简键盘 / 远程终端没有这个键，
   此时仍可用 `Ctrl+C/V/X/Z/Y`。菜单条画在输入框内第一行（受元件裁剪限制，不做越界弹窗）。
-- 边框兼容模式替换边框字符和圆点（`●` → `·`）；滑杆轨道 `━`、滚动条 `█` / `│`、
+- 边框兼容模式替换边框字符和圆点（`●` → `·`）；滑杆轨道 `━`、滚动条 `█` / `│` / `─`、
   图片半格 `▀` 仍使用 Unicode，非 UTF-8 终端里需要自行换主题/字符或关闭这些元件。
 - `UIImage` 用半格像素，纵向分辨率只有「行数 ×2」；缩放是最近邻，没有抗锯齿。
   目前只解 PNG / JPG 静态帧，GIF / WebP / APNG 动图不解析；运行时动态加载 `windowscodecs.dll` / `ole32.dll`。
-- `ScrollView` 只实现竖向滚动与竖向滚动条（横向滚动、嵌套滚动、滚动惯性暂未做）；
+- `ScrollView` 已实现横/竖双轴滚动与滑条；嵌套滚动和滚动惯性暂未做；
   内容仍是普通子元素，会被父级裁剪，滚出视口的部分不参与命中测试。
 - 鼠标走 Windows 控制台记录，仅在「本机真实控制台窗口」里有效：输出被重定向到文件/管道、
   或运行在只提供 VT 鼠标协议的终端包装层里时，`Mouse::Enable()` 会失败并自动退回纯键盘模式。
@@ -696,16 +748,22 @@ terminal_demo --bench 200    # 渲染性能基准（脏标记 / 全量重绘 / A
   `root->layoutDirty` 时会重排一遍；静态界面请自行在 `value` 变化后调用 `Arrange()`。
 - `PageHolder` 的局部队列不会自动扫描整棵 DOM 判断消息归属；`PostLocal` 是显式投递。
   目标对象没消费时只向父 PageHolder 冒泡一次，根页面未消费的消息直接丢弃。
-- `Window` 是父容器内部的浮动面板，不能突破 `UI::Render` 的 `PushClip(bounds)`；
-  没有全屏遮罩、模态焦点锁和跨父级 Z 序。
+- `Window` 作为普通子元素时只在父容器内部浮动，不能突破 `UI::Render` 的 `PushClip(bounds)`；
+  库内置的 `OverlayHost` 只把可见子窗口作为命中区域，因此窗口可以拖到全屏，窗口外的点击会穿透到下层。
+  库本身不提供全屏遮罩、模态焦点锁和跨父级 Z 序。
 - `AudioPlayer` 的 MF 后端依赖 `Update()` 泵窗口消息；不调用时可能停在 Stopped。
   MCI 兜底对 waveaudio 通常不支持 `speed`，`SetSpeed` 会返回 false。
-- `EnsureAlignment()` 只能基于缓冲区里「宽字符下一格是否被占用」做启发式判断，
-  无法读取终端字体的真实像素宽度；它能修掉 `●/全角字符` 压格，但不能保证所有
-  第三方终端字体缩放下的绝对对齐。
+- 兼容模式只判断终端是否支持 ANSI/Unicode，不再逐帧检查缓冲区里的宽字符对齐。
+  因此终端字体缩放、第三方终端把 CJK 渲染成非标准宽度时，库不会自动修字符；
+  需要用户调整终端字体或显式 `TERMINAL_BOXES=ascii`。
+- `Window` 的半格 `UIImage` 按字符格近似显示，不读取终端真实像素宽度。
 - JsonCore 不是纯头文件，`JsonCore.cpp / Number.cpp` 必须参与编译；CMake 已自动归档，
   直接用 g++ 时需要显式带上这两个源文件。
 - `Json` 是值语义包装：普通拷贝、`get()` / `GetArray()` 遍历都会得到独立副本；
   只有 `operator[]` 返回指向父节点的视图（用于 `json["key"] = value` 这种写入）。
+- MinGW 下的 `terminal_demo` 默认用 `-static` 链接运行时，避免系统 PATH 里其他 MinGW
+  （例如 CLion 自带旧版）抢先加载 `libstdc++-6.dll`，出现“找不到程序入口点”。
+  如果改成动态链接，必须保证 `C:\mingw64\bin` 排在 PATH 前面，或把
+  `libstdc++-6.dll / libgcc_s_seh-1.dll / libwinpthread-1.dll` 复制到 exe 同目录。
 - 剪贴板走 Win32 `CF_UNICODETEXT`：无剪贴板权限（服务/会话隔离）时复制粘贴静默失败并返回 false。
 - 鼠标坐标依赖 `srWindow` 原点换算；窗口被拖出滚动区时坐标仍按当前可视窗口计算。

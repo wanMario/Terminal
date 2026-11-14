@@ -40,9 +40,11 @@ namespace Terminal {
         wchar_t bracketRight{ L']' };
 
         std::function<void(double)> onChanged{};
+        std::function<void(double)> onCommitted{};
 
         Slider() { signature = "UISlider";
             focusable = true;
+            mouseCursor = MouseCursor::Hand;
             style = Style(Theme::Current().text, Theme::Current().background);
         }
 
@@ -66,6 +68,9 @@ namespace Terminal {
         Slider& SetBarWidth(const int w) { barWidth = w; return *this; }
         Slider& SetPrecision(const int p) { precision = std::max(p, 0); return *this; }
         Slider& OnChange(std::function<void(double)> cb) { onChanged = std::move(cb); return *this; }
+        // 拖拽抬起后触发：需要提交到外部（例如媒体 seek）的逻辑放这里，避免拖动中每格都阻塞。
+        Slider& OnCommit(std::function<void(double)> cb) { onCommitted = std::move(cb); return *this; }
+        [[nodiscard]] bool IsDragging() const { return m_dragging; }
 
         void SetValue(const double v, const bool notify = true) {
             const double lo = std::min(min, max);
@@ -201,6 +206,7 @@ namespace Terminal {
                     // 抬起时不再按单元格坐标补一次，避免把亚格精度拖到最后又弹回格边界
                     m_dragging = false;
                     Invalidate();
+                    if (onCommitted) onCommitted(value);
                     return true;
                 }
                 return false;

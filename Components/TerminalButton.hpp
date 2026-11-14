@@ -45,6 +45,7 @@ namespace Terminal {
         Button() {
             signature = "UIButton";
             focusable = true;
+            mouseCursor = MouseCursor::Hand;
             layout.minHeight = 1;
             const Theme& th = Theme::Current();
             normalFg = th.text;

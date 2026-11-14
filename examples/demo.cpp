@@ -8,12 +8,15 @@
 
 #include <cstdio>
 #include <chrono>
+#include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <cstdlib>
 #include <filesystem>
 #include <iostream>
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "../Terminal.hpp"   // 公共入口（也引入 Terminal::Version() 的静态库符号声明）
 
@@ -44,7 +47,7 @@
 using namespace Terminal;
 
 namespace {
-    
+
     // --truecolor：交互模式改用 ANSI 24 位真彩刷新
     int g_colorMode = 0;   // 0=自动探测  1=强制真彩  2=强制 16 色
 
@@ -63,6 +66,289 @@ namespace {
         return nearSource.string();
     }
 
+    // std::filesystem 在 Windows 上用宽路径；u8string 转回 UTF-8 字符串给 AudioPlayer
+    std::filesystem::path U8Path(const std::string& text) {
+        const std::u8string u8(reinterpret_cast<const char8_t*>(text.data()), text.size());
+        return std::filesystem::path(u8);
+    }
+
+    std::string U8Text(const std::filesystem::path& path) {
+        const auto text = path.u8string();
+        return std::string(reinterpret_cast<const char*>(text.data()), text.size());
+    }
+
+    //----------------------------------------------------------------------
+    // 直接扫描 D:\CloudMusic 的播放器窗口（放在 Window 里演示弹窗 + 排版）
+    //----------------------------------------------------------------------
+    class MusicWindow : public Window {
+    public:
+        MusicWindow() : Window("音乐播放器", 64, 18) {
+            layout.gap = 1;
+            style = Style(Theme::Current().text, Theme::Current().surface);
+            SetTitleColors(Theme::Current().text, Theme::Current().surfaceAlt);
+            SetBorderColor(Theme::Current().border);
+            SetResizable(true);
+            SetMinSize(32, 10);
+
+            ScanTracks();
+
+            m_status = std::make_shared<Text>("正在加载音乐目录…");
+            m_status->layout.Width(62);
+            m_status->layout.height = 1;
+            m_status->SetStyle(Style(Theme::Current().textMuted, Theme::Current().surface));
+            AddChild(m_status);
+
+            m_scroll = std::make_shared<ScrollView>();
+            m_scroll->layout.height = 4;
+            m_scroll->layout.width = 62;
+            m_scroll->SetWheelStep(2);
+            m_scroll->SetBackgroundColor(Theme::Current().surface);
+            AddChild(m_scroll);
+
+            m_list = std::make_shared<ChoiceGroup>();
+            m_list->SetOptions(m_names);
+            m_list->layout.height = static_cast<int>(m_names.size());
+            m_list->onChange = [this](const std::vector<int>& selected) {
+                if (!selected.empty()) PlayIndex(selected.front());
+                };
+            m_scroll->AddChild(m_list);
+
+            auto transport = std::make_shared<Panel>(Flow::Row);
+            transport->SetFill(false);
+            transport->layout.gap = 1;
+            transport->layout.height = 3;
+            transport->layout.width = 62;
+
+            m_prev = std::make_shared<Button>("上一首");
+            m_prev->layout.Width(12);
+            m_prev->SetColor(Theme::Current().accent);
+            m_prev->OnClick([this] { StepTrack(-1); });
+
+            m_play = std::make_shared<Button>("播放");
+            m_play->layout.Width(11);
+            m_play->SetColor(Theme::Current().success);
+            m_play->OnClick([this] { TogglePlay(); });
+
+            m_next = std::make_shared<Button>("下一首");
+            m_next->layout.Width(12);
+            m_next->SetColor(Theme::Current().accent);
+            m_next->OnClick([this] { StepTrack(1); });
+
+            m_stop = std::make_shared<Button>("停止");
+            m_stop->layout.Width(10);
+            m_stop->SetColor(Theme::Current().danger);
+            m_stop->OnClick([this] {
+                m_player.Stop();
+                m_wasPlaying = false;
+                UpdateStatus("已停止");
+                });
+
+            transport->AddChild(m_prev);
+            transport->AddChild(m_play);
+            transport->AddChild(m_next);
+            transport->AddChild(m_stop);
+            AddChild(transport);
+
+            m_progress = std::make_shared<Slider>("进度", 0.0, 1.0, 0.0);
+            m_progress->layout.Width(62);
+            m_progress->layout.height = 1;
+            m_progress->barWidth = 34;
+            m_progress->showValue = true;
+            m_progress->OnChange([this](double seconds) {
+                // 拖动中只更新画面；真正的 seek 在抬起时提交，避免每个鼠标事件都
+                // 调 Media Foundation 阻塞主线程。
+                if (!m_ignoreProgress && !m_progress->IsDragging()) m_player.Seek(seconds);
+                });
+            m_progress->OnCommit([this](double seconds) {
+                if (!m_ignoreProgress) m_player.Seek(seconds);
+                });
+            AddChild(m_progress);
+
+            m_speed = std::make_shared<Slider>("倍速", 0.25, 4.0, 1.0);
+            m_speed->layout.Width(62);
+            m_speed->layout.height = 1;
+            m_speed->barWidth = 18;
+            m_speed->step = 0.25;
+            m_speed->precision = 2;
+            m_speed->OnChange([this](double speed) {
+                if (m_ignoreSpeed || m_speed->IsDragging()) return;
+                if (!m_player.SetSpeed(speed))
+                    UpdateStatus(std::string("倍速不可用：") + m_player.LastError());
+                });
+            m_speed->OnCommit([this](double speed) {
+                if (m_ignoreSpeed) return;
+                if (!m_player.SetSpeed(speed))
+                    UpdateStatus(std::string("倍速不可用：") + m_player.LastError());
+                });
+            AddChild(m_speed);
+
+            m_status->SetText(m_names.empty() ? "D:\\CloudMusic 中没有找到音频文件" : "选择曲目后点击播放");
+        }
+
+        //--------------------------------------------------------------------------
+        // 文件扫描
+        //--------------------------------------------------------------------------
+        void ScanTracks() {
+            namespace fs = std::filesystem;
+            try {
+                const fs::path root = U8Path("D:\\CloudMusic");
+                if (!fs::is_directory(root)) return;
+                for (const auto& entry : fs::recursive_directory_iterator(
+                    root, fs::directory_options::skip_permission_denied)) {
+                    if (!entry.is_regular_file()) continue;
+                    std::string ext = U8Text(entry.path().extension());
+                    std::transform(ext.begin(), ext.end(), ext.begin(),
+                        [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
+                    if (ext != ".mp3" && ext != ".flac" && ext != ".wav" &&
+                        ext != ".m4a" && ext != ".aac" && ext != ".ogg" && ext != ".wma")
+                        continue;
+                    const auto u8 = U8Text(entry.path());
+                    m_tracks.emplace_back(u8);
+                }
+            }
+            catch (const std::exception&) {
+                // 目录不存在/无权限时保持空列表，窗口仍然可用
+            }
+            std::sort(m_tracks.begin(), m_tracks.end());
+            for (const auto& path : m_tracks) {
+                const auto stem = U8Text(U8Path(path).stem());
+                m_names.emplace_back(stem);
+            }
+        }
+
+        //--------------------------------------------------------------------------
+        // 播放控制
+        //--------------------------------------------------------------------------
+        void PlayIndex(const int index) {
+            if (index < 0 || index >= static_cast<int>(m_tracks.size())) {
+                UpdateStatus("没有可播放的曲目");
+                return;
+            }
+            m_player.Close();
+            if (!m_player.Open(m_tracks[static_cast<size_t>(index)]) ||
+                !m_player.Play()) {
+                UpdateStatus(std::string("无法播放：") + m_player.LastError());
+                m_current = -1;
+                return;
+            }
+            m_current = index;
+            m_player.SetSpeed(m_speed->value);
+            m_player.SetVolume(80);
+            m_wasPlaying = false;             // 等 OnUpdate 真正观察到 Playing 后再允许“播完自动下一首”
+            m_list->cursor = index;
+            m_list->SetSelected(index, true);
+            m_ignoreProgress = true;
+            m_progress->SetRange(0.0, 1.0);
+            m_progress->SetValue(0.0, false);
+            m_ignoreProgress = false;
+            UpdateStatus("正在播放");
+        }
+
+        void TogglePlay() {
+            if (m_current < 0) {
+                if (!m_tracks.empty()) PlayIndex(m_list->cursor >= 0 ? m_list->cursor : 0);
+                return;
+            }
+            if (m_player.GetState() == AudioPlayer::State::Playing) {
+                m_player.Pause();
+                m_wasPlaying = false;
+                UpdateStatus("已暂停");
+            } else {
+                if (!m_player.Play()) {
+                    UpdateStatus(std::string("继续失败：") + m_player.LastError());
+                    return;
+                }
+                m_wasPlaying = false;         // 同样等 Playing 状态真正出现
+                UpdateStatus("正在播放");
+            }
+        }
+
+        void StepTrack(const int delta) {
+            if (m_tracks.empty()) return;
+            const int count = static_cast<int>(m_tracks.size());
+            const int from = (m_current >= 0) ? m_current : 0;
+            PlayIndex((from + delta + count) % count);
+        }
+
+        void UpdateStatus(const std::string& text) {
+            if (m_status == nullptr) return;
+            m_status->SetText(text);
+        }
+
+        //--------------------------------------------------------------------------
+        // 每帧：泵 MF 消息、更新进度与状态
+        //--------------------------------------------------------------------------
+        void OnUpdate() override {
+            Window::OnUpdate();               // 应用拖拽中挂起的子元素重排
+            // 没打开文件时不要每帧去泵 Win32 消息，避免抢走鼠标/输入消息。
+            if (m_player.IsOpen()) m_player.Update();
+            const DWORD64 now = GetTickCount64();
+            if (now - m_lastTick < 250) return;
+            m_lastTick = now;
+
+            const AudioPlayer::State state = m_player.GetState();
+            if (state == AudioPlayer::State::Playing) {
+                m_wasPlaying = true;
+                const double duration = m_player.Duration();
+                const double position = m_player.Position();
+                // 用户正在拖进度条时不要用播放位置覆盖滑块，否则看起来“拖了没反应”
+                if (duration > 0.0 && !m_progress->IsDragging()) {
+                    m_ignoreProgress = true;
+                    m_progress->SetRange(0.0, duration);
+                    m_progress->SetValue(position, false);
+                    m_ignoreProgress = false;
+                }
+                if (duration > 0.0 && position + 0.7 >= duration)
+                    StepTrack(1);
+                else
+                    UpdateStatus("正在播放  " + std::string(m_player.BackendName()));
+            } else if (state == AudioPlayer::State::Paused) {
+                UpdateStatus("已暂停  " + std::string(m_player.BackendName()));
+            } else if (m_wasPlaying && state == AudioPlayer::State::Stopped) {
+                m_wasPlaying = false;
+                StepTrack(1);                 // 自然播完 -> 下一首
+            }
+
+            if (m_play != nullptr) {
+                const std::string label = (state == AudioPlayer::State::Playing) ? "暂停" : "播放";
+                if (m_play->GetLabel() != label) {
+                    m_play->SetLabel(label);
+                    m_play->Invalidate();
+                }
+            }
+        }
+
+        bool OnMessage(const Message& msg) override {
+            if (msg.type == "close") {
+                m_player.Stop();
+                m_player.Close();
+                m_wasPlaying = false;
+            }
+            return Window::OnMessage(msg);
+        }
+
+        void OnDelete() override { m_player.Close(); }
+
+    private:
+        std::vector<std::string> m_tracks{};
+        std::vector<std::string> m_names{};
+        int m_current{ -1 };
+        bool m_wasPlaying{ false };
+        bool m_ignoreProgress{ false };
+        bool m_ignoreSpeed{ false };
+        DWORD64 m_lastTick{ 0 };
+        AudioPlayer m_player{};
+        std::shared_ptr<Text> m_status{};
+        std::shared_ptr<ScrollView> m_scroll{};
+        std::shared_ptr<ChoiceGroup> m_list{};
+        std::shared_ptr<Button> m_prev{};
+        std::shared_ptr<Button> m_play{};
+        std::shared_ptr<Button> m_next{};
+        std::shared_ptr<Button> m_stop{};
+        std::shared_ptr<Slider> m_progress{};
+        std::shared_ptr<Slider> m_speed{};
+    };
+
     // 根容器：接收 "quit" 这类全局消息
     class DemoRoot : public Panel {
     public:
@@ -79,6 +365,7 @@ namespace {
     std::shared_ptr<Panel> BuildDemoUI() {
         Theme::UseDark();
         const Theme& th = Theme::Current();
+
 
         auto root = std::make_shared<DemoRoot>(Flow::Column);
         root->layout.Padding(1);
@@ -128,7 +415,7 @@ namespace {
         // 左卡片整体做成滚动区：内容超过卡片高度时，滚动条 + 滚轮 / PageUp/PageDown 接管
         auto leftScroll = std::make_shared<ScrollView>();
         leftScroll->layout.grow = 1;
-        leftScroll->layout.gap = 0;
+        leftScroll->layout.gap = 1;
         leftScroll->SetBackgroundColor(th.surface);
         leftScroll->SetWheelStep(2);
 
@@ -141,7 +428,7 @@ namespace {
         leftScroll->AddChild(input);
 
         // RGB 三条滑杆：直接控制昵称文字颜色，验证动态交互
-        auto rgb = std::make_shared<Panel>(Flow::Column);
+        auto rgb = std::make_shared<Panel>(Flow::Row);
         rgb->SetFill(false);
         rgb->layout.gap = 0;
         rgb->layout.height = 3;
@@ -200,21 +487,31 @@ namespace {
 
         btns->AddChild(ok);
         btns->AddChild(cancel);
-        btns->AddChild(ready);
-        leftScroll->AddChild(btns);
+        
 
-        // 新控件：开关 + 单选组（Space/Enter 或鼠标点击均可切换）
+
+        // 新控件：开关 + 单选组 + 多选组（Space/Enter 或鼠标点击均可切换）
         auto animate = std::make_shared<Switch>();
         animate->SetLabel("动画");
         animate->SetValue(true, false);
         animate->layout.height = 1;
-        leftScroll->AddChild(animate);
+        btns->AddChild(animate);
+        btns->AddChild(ready);
+        
+        leftScroll->AddChild(btns);
 
         auto mode = std::make_shared<ChoiceGroup>();
         mode->SetOptions({ "暗色", "亮色", "霓虹" });
         mode->SetSelected(0, false);
         mode->layout.height = 3;
         leftScroll->AddChild(mode);
+
+        auto features = std::make_shared<ChoiceGroup>();
+        features->SetMulti(true);
+        features->SetOptions({ "高对比", "减少动画", "紧凑模式" });
+        features->SetSelected(1, true);
+        features->layout.height = 3;
+        leftScroll->AddChild(features);
 
         // 滚动列表：把左卡片剩余高度吃满，滚轮 / 右侧滚动条 / PageUp/PageDown 都能滚
         const char* kRows[] = {
@@ -319,7 +616,7 @@ namespace {
         footer->SetFill(false);
         footer->layout.gap = 2;
         footer->layout.height = 1;
-        auto keys = std::make_shared<Text>("Tab 切换 · 拖动 R/G/B 调昵称色 · Ctrl+C/V/X/Z/Y · MENU 菜单 · q 退出");
+        auto keys = std::make_shared<Text>("Tab 切换 · 拖动 R/G/B 调昵称色 · Ctrl+拖边框缩放窗口 · Ctrl+C/V/X/Z/Y · MENU 菜单 · q 退出");
         keys->SetStyle(Style(th.textMuted, th.background));
         keys->layout.grow = 1;
         auto state = std::make_shared<Text>(Glyphs::DotUtf8() + " 已连接");
@@ -328,6 +625,13 @@ namespace {
         footer->AddChild(keys);
         footer->AddChild(state);
         root->AddChild(footer);
+
+        // ── 悬浮音乐窗口：不占列布局高度，覆盖在界面上，可拖动标题栏 / 关闭 ─
+        auto overlay = std::make_shared<OverlayHost>();
+        auto music = std::make_shared<MusicWindow>();
+        music->MoveTo(10, 2);
+        overlay->AddChild(music);
+        root->AddChild(overlay);
 
         return root;
     }
@@ -1054,7 +1358,7 @@ namespace {
             Check(probe->got, "消息由控件地址发出并可定向投递");
             Check(probe->last.sender == label.get(), "消息记录发送者地址");
             Check(probe->last.payload.IsObject() && probe->last.payload.contains_key("name"),
-                  "消息携带 Json 对象负载");
+                "消息携带 Json 对象负载");
         }
 
         std::cout << "[selftest] page holder\n";
@@ -1083,6 +1387,21 @@ namespace {
             Check(sw->value, "Switch 通过消息队列切换状态");
             Check(MessageQueue::Empty(), "Switch change 通知处理完毕");
 
+            // 鼠标：开关整行可点，按下/抬起后走同一消息队列
+            sw->SetValue(false, false);
+            sw->Arrange(Bounds{ 0, 0, 12, 1 });
+            xMouse swDown{};
+            swDown.action = MouseAction::Down;
+            swDown.button = MouseButton::Left;
+            swDown.x = 2;
+            swDown.y = 0;
+            Check(sw->OnMouse(swDown), "Switch 鼠标按下被消费");
+            xMouse swUp = swDown;
+            swUp.action = MouseAction::Up;
+            Check(sw->OnMouse(swUp), "Switch 鼠标抬起被消费");
+            MessageQueue::ProcessAll();
+            Check(sw->value, "Switch 鼠标点击切换状态");
+
             auto cg = std::make_shared<ChoiceGroup>();
             cg->SetOptions({ "A", "B", "C" });
             Json pick = MsgJson::Object();
@@ -1091,8 +1410,24 @@ namespace {
             MessageQueue::ProcessAll();
             Check(cg->SelectedIndex() == 2, "单选 Choices 选中指定项");
 
+            // 鼠标：悬停行高亮 + 点击第二行选中
+            cg->SetOptions({ "A", "B", "C" });
+            cg->Arrange(Bounds{ 0, 0, 12, 3 });
+            xMouse hover{};
+            hover.action = MouseAction::Move;
+            hover.x = 2;
+            hover.y = 1;
+            Check(cg->OnMouse(hover), "Choices 鼠标悬停被消费");
+            xMouse click = hover;
+            click.action = MouseAction::Down;
+            click.button = MouseButton::Left;
+            Check(cg->OnMouse(click), "Choices 鼠标点击被消费");
+            MessageQueue::ProcessAll();
+            Check(cg->SelectedIndex() == 1, "Choices 鼠标点击选中对应行");
+
             cg->SetMulti(true);
             cg->SetSelected(2, false);
+            cg->SetSelected(1, false);
             for (int i : { 0, 1 }) {
                 Json p = MsgJson::Object();
                 p["index"] = Json(static_cast<double>(i));
@@ -1100,6 +1435,55 @@ namespace {
                 MessageQueue::ProcessAll();
             }
             Check(cg->SelectedIndices().size() == 2, "多选 Choices 可同时选中多项");
+
+            // ScrollView 里的 ChoiceGroup：鼠标命中必须穿过滚动容器落到行上
+            auto svHost = std::make_shared<Panel>(Flow::Column);
+            auto sv = std::make_shared<ScrollView>();
+            sv->layout.Width(12);
+            sv->layout.Height(3);
+            auto cgInScroll = std::make_shared<ChoiceGroup>();
+            cgInScroll->SetOptions({ "一", "二", "三", "四", "五" });
+            cgInScroll->layout.height = 5;
+            sv->AddChild(cgInScroll);
+            svHost->AddChild(sv);
+            svHost->Arrange(Bounds{ 0, 0, 12, 3 });
+            MouseRouter::Instance().SetRoot(svHost.get());
+            xMouse scrollClick{};
+            scrollClick.action = MouseAction::Down;
+            scrollClick.button = MouseButton::Left;
+            scrollClick.x = sv->GetBounds().Left() + 1;
+            scrollClick.y = sv->GetBounds().Top();
+            MouseRouter::Instance().Dispatch(scrollClick);
+            MessageQueue::ProcessAll();
+            Check(cgInScroll->SelectedIndex() == 0, "滚动容器内单选项可鼠标点击");
+
+            // 滚过之后再点：子元素 bounds 变成负 y，命中仍应落到可见行
+            const int topBeforeScroll = cgInScroll->GetBounds().Top();
+            sv->SetScroll(1);
+            Check(cgInScroll->GetBounds().Top() == topBeforeScroll - 1,
+                "滚动后子元素立即上移");
+            svHost->Arrange(Bounds{ 0, 0, 12, 3 });
+            scrollClick.y = sv->GetBounds().Top();
+            MouseRouter::Instance().Dispatch(scrollClick);
+            MessageQueue::ProcessAll();
+            Check(cgInScroll->SelectedIndex() == 1, "滚动后的单选项仍可鼠标点击");
+            MouseRouter::Instance().Clear();
+
+            // 横向：内容比视口宽时出现底部滑条，并能用 scrollX 平移
+            auto hsv = std::make_shared<ScrollView>();
+            hsv->layout.Width(8);
+            hsv->layout.Height(3);
+            auto wide = std::make_shared<Text>("0123456789ABCDEFGHIJ");
+            wide->layout.width = 20;
+            wide->layout.height = 1;
+            hsv->AddChild(wide);
+            hsv->Arrange(Bounds{ 0, 0, 8, 3 });
+            Check(hsv->HasHBar() && hsv->HBar().valid, "宽内容自动出现横向滑条");
+            const auto hbg = hsv->HBar();
+            Check(hsv->HitTestOverlay(hbg.left + 1, hbg.y), "横向滑条优先于内容命中");
+            const int leftBeforeX = wide->GetBounds().Left();
+            hsv->SetScrollX(2);
+            Check(wide->GetBounds().Left() == leftBeforeX - 2, "横向滚动子元素立即左移");
 
             auto win = std::make_shared<Window>("Demo", 20, 8);
             win->MoveTo(2, 1);
@@ -1119,23 +1503,84 @@ namespace {
             move.y = down.y + 2;
             Check(win->OnMouse(move) && win->bounds.Left() > oldLeft, "Window 标题栏拖拽移动");
 
+            // Ctrl + 边框 -> 8 方向缩放；这里测左上角拖拽
+            win->SetResizable(true);
+            win->SetMinSize(12, 6);
+            const int rl = win->bounds.Left(), rt = win->bounds.Top();
+            const int rr = win->bounds.Right() - 1, rb = win->bounds.Bottom() - 1;
+            const int rmx = rl + win->Width() / 2, rmy = rt + win->Height() / 2;
+            Check(win->HitResizeEdge(rl, rt) == Window::ResizeTopLeft &&
+                  win->HitResizeEdge(rr, rt) == Window::ResizeTopRight &&
+                  win->HitResizeEdge(rl, rb) == Window::ResizeBottomLeft &&
+                  win->HitResizeEdge(rr, rb) == Window::ResizeBottomRight &&
+                  win->HitResizeEdge(rmx, rt) == Window::ResizeTop &&
+                  win->HitResizeEdge(rmx, rb) == Window::ResizeBottom &&
+                  win->HitResizeEdge(rl, rmy) == Window::ResizeLeft &&
+                  win->HitResizeEdge(rr, rmy) == Window::ResizeRight,
+                "8 个方向把手均可命中");
+            const int oldW = win->Width();
+            const int oldH = win->Height();
+            xMouse resizeDown{};
+            resizeDown.action = MouseAction::Down;
+            resizeDown.button = MouseButton::Left;
+            resizeDown.ctrl = true;
+            resizeDown.x = win->bounds.Left();
+            resizeDown.y = win->bounds.Top();
+            Check(win->OnMouse(resizeDown), "Ctrl 点边框进入缩放");
+            xMouse resizeMove = resizeDown;
+            resizeMove.action = MouseAction::Move;
+            resizeMove.x = resizeDown.x + 4;
+            resizeMove.y = resizeDown.y + 2;
+            Check(win->OnMouse(resizeMove), "缩放拖拽被消费");
+            Check(win->Width() == oldW - 4 && win->Height() == oldH - 2,
+                "缩放改变窗口尺寸");
+            xMouse resizeUp = resizeMove;
+            resizeUp.action = MouseAction::Up;
+            Check(win->OnMouse(resizeUp), "缩放抬起结束");
+
+            // 在 OverlayHost 中向右拖边框应能放大，而不是只能缩小
+            auto ov = std::make_shared<OverlayHost>();
+            auto grow = std::make_shared<Window>("Grow", 20, 8);
+            grow->MoveTo(2, 2);
+            grow->SetResizable(true);
+            grow->SetMinSize(10, 6);
+            ov->AddChild(grow);
+            ov->Arrange(Bounds{ 0, 0, 40, 20 });
+            Check(ov->HitTest(30, 15) == false, "OverlayHost 窗口外不拦截鼠标");
+            Check(grow->Width() == 20, "OverlayHost 内窗口初始宽度");
+            xMouse growDown{};
+            growDown.action = MouseAction::Down;
+            growDown.button = MouseButton::Left;
+            growDown.ctrl = true;
+            growDown.x = grow->bounds.Right() - 1;
+            growDown.y = grow->bounds.Top() + 1;
+            Check(grow->OnMouse(growDown), "OverlayHost 右边框进入缩放");
+            xMouse growMove = growDown;
+            growMove.action = MouseAction::Move;
+            growMove.x += 6;
+            grow->OnMouse(growMove);
+            Check(grow->Width() == 26, "OverlayHost 内可向右放大窗口");
+
             MessageQueue::PostFrom(win.get(), win.get(), "close");
             MessageQueue::ProcessAll();
             Check(!win->open && !win->isVisible, "Window 关闭消息生效");
         }
 
-        std::cout << "[selftest] layout guard\n";
+        std::cout << "[selftest] mouse cursor\n";
         {
-            const int oldMode = Box::g_asciiFallbackMode;
-            Box::g_asciiFallbackMode = -1;
-            ConsoleBackBuffer gb(4, 1);
-            gb.SetCell(0, 0, L'●', Style());
-            gb.SetCell(1, 0, L'━', Style());
-            const auto rep = gb.EnsureAlignment();
-            Check(rep.detected, "检测到宽字符压到相邻格");
-            Check(gb.GetChar(0, 0) == L'·', "● 自动替换成窄圆点 ·");
-            Check(rep.switchedAscii, "排版异常时自动打开 ASCII 兼容模式");
-            Box::g_asciiFallbackMode = oldMode;
+            TextInput input;
+            Check(input.CursorAt(0, 0) == MouseCursor::IBeam, "输入框指针为 IBeam");
+            Button button("OK");
+            Check(button.CursorAt(0, 0) == MouseCursor::Hand, "按钮指针为 Hand");
+            Slider slider("音量", 0, 100, 50);
+            Check(slider.CursorAt(0, 0) == MouseCursor::Hand, "滑杆指针为 Hand");
+
+            auto win = std::make_shared<Window>("Cursor", 20, 10);
+            win->SetResizable(true);
+            win->Arrange(Bounds{ 0, 0, 20, 10 });
+            Check(win->CursorAt(0, 0) == MouseCursor::SizeAll, "窗口角点指针为 SizeAll");
+            Check(win->CursorAt(0, 4) == MouseCursor::SizeWE, "窗口左边框指针为 SizeWE");
+            Check(win->CursorAt(10, 0) == MouseCursor::SizeNS, "窗口上边框指针为 SizeNS");
         }
 
         std::cout << (g_fail == 0 ? "[selftest] ALL PASSED\n" : "[selftest] FAILED\n");
@@ -1176,7 +1621,6 @@ namespace {
 
         buf.Clear(Style(Theme::Current().text, Theme::Current().background));
         root->Render(buf);
-        buf.EnsureAlignment();
         std::cout << buf.ToAnsiText();
         FocusManager::Instance().Clear();
         return 0;
@@ -1189,6 +1633,7 @@ namespace {
         SetStdCP();
         RemoveQuickEdit();
         CursorVisible(false);
+        // Box::SetAsciiFallback(true);
 
         // 真彩默认可用：能探测到 VT 就直接走 ANSI 真彩，否则退回 16 色属性
         const bool wantTrueColor = (g_colorMode == 1) ? true
@@ -1234,11 +1679,31 @@ namespace {
                 root->Invalidate();
             }
 
-            // 鼠标事件优先：点击 / 拖拽 / 滚轮 / 悬停
+            // 鼠标事件优先：点击 / 拖拽 / 滚轮 / 悬停。
+            // 高 DPI 下拖动会连续产生大量 Move，不能一次把队列抽干：每轮最多处理
+            // 64 条，并把「捕获中的拖拽 Move」合并成最后一条，保证主循环还能渲染。
             xMouse mouse;
-            while (Mouse::PollMouse(mouse)) {
+            xMouse pendingDrag{};
+            bool hasPendingDrag = false;
+            int mouseBudget = 64;
+            while (mouseBudget-- > 0 && Mouse::PollMouse(mouse)) {
+                if (mouse.action == MouseAction::Move &&
+                    MouseRouter::Instance().Capture() != nullptr) {
+                    pendingDrag = mouse;
+                    hasPendingDrag = true;
+                    continue;
+                }
+                if (hasPendingDrag) {
+                    MouseRouter::Instance().Dispatch(pendingDrag);
+                    hasPendingDrag = false;
+                }
                 MouseRouter::Instance().Dispatch(mouse);
             }
+            if (hasPendingDrag) MouseRouter::Instance().Dispatch(pendingDrag);
+
+            // 拖拽捕获期间强制刷新：滑杆/窗口即使某次状态值没变化，也要让
+            // 指针和滑块跟上手，而不是等下一次无关的 Invalidate 才重绘。
+            if (MouseRouter::Instance().Capture() != nullptr) root->Invalidate();
 
             xChar key;
             while (Mouse::PollKey(key)) {
@@ -1251,13 +1716,20 @@ namespace {
                 if (key.IsPrintableAscii() && (key.Ascii() == 'q' || key.Ascii() == 'Q')) running = false;
             }
 
+            // 鼠标/键盘也可能改布局（滚动、输入框变高、Window 内容变化）：
+            // 在 Update/Render 之前再收敛一次，避免滚动条动了、列表却晚一帧才动。
+            if (root->layoutDirty) {
+                root->Arrange(Rect2Di{ 0, 0, buf.Width(), buf.Height() });
+                root->Invalidate();
+            }
+
             root->Update();
+            // 指针样式跟随最深层控件；SetCursor 只在形状变化时调用
+            MouseRouter::Instance().ApplyCursor();
             // 脏标记驱动：界面没有任何变化时直接跳过整帧的渲染与刷新（空闲 0 次控制台写入）
             if (root->IsDirty()) {
                 buf.Clear(Style(Theme::Current().text, Theme::Current().background));
                 root->Render(buf);
-                const auto align = buf.EnsureAlignment();
-                if (align.switchedAscii) root->Invalidate();
                 buf.FlushAuto();
             }
 
@@ -1266,6 +1738,7 @@ namespace {
 
         focus.Clear();
         MouseRouter::Instance().Clear();
+        ApplyMouseCursor(MouseCursor::Arrow);
         Mouse::Disable();
         CursorVisible(true);
         SetCursorPosition(0, buf.Height());

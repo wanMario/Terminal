@@ -40,6 +40,18 @@ namespace Terminal {
     // 容器内子元素的排列方向
     enum class Flow { Row, Column };
 
+    // 鼠标指针语义：由控件声明，前端尽量映射成系统光标；
+    // 终端不支持自定义鼠标指针时，至少可以作为命中/交互提示使用。
+    enum class MouseCursor {
+        Arrow = 0,
+        IBeam,       // 文本输入
+        Hand,        // 按钮 / 开关 / 选项
+        SizeWE,      // 横向缩放 / 横向滑条
+        SizeNS,      // 纵向缩放 / 纵向滑条
+        SizeAll,     // 窗口拖动 / 角点缩放
+        Crosshair
+    };
+
     // 子元素在分配格内的对齐
     enum class Align { Start, Center, End, Stretch };
 
@@ -112,6 +124,8 @@ namespace Terminal {
         bool focusable{ false };
         bool focused{ false };
 
+        // 指针样式（控件级默认值；容器命中后由最深层控件决定）
+        MouseCursor mouseCursor{ MouseCursor::Arrow };
         // 脏标记：子树需要重绘 / 需要重新布局
         bool dirty{ true };
         bool layoutDirty{ true };
@@ -144,6 +158,7 @@ namespace Terminal {
         virtual void OnMount() {}                // 被加入父节点时
         virtual void OnBoundsChanged() {}        // 布局尺寸变化
         virtual void OnRender(ConsoleBackBuffer&) {}   // 绘制
+        virtual void OnRenderOverlay(ConsoleBackBuffer&) {} // 子元素之后绘制（滚动条/浮层）
         virtual void OnUpdate() {                // 每帧逻辑
             if (isEnabled) OnEnabledUpdate();
             else OnDisabledUpdate();
@@ -312,6 +327,7 @@ namespace Terminal {
             for (auto& c : children) {
                 if (c) c->RenderSubtree(buf);
             }
+            OnRenderOverlay(buf);
             buf.PopClip();
             dirty = false;
         }
@@ -326,6 +342,7 @@ namespace Terminal {
             for (auto& c : children) {
                 if (c) c->RenderSubtree(buf);
             }
+            OnRenderOverlay(buf);
             buf.PopClip();
             dirty = false;
         }
@@ -348,9 +365,21 @@ namespace Terminal {
         }
 
         //---------- 命中测试 ----------
-        [[nodiscard]] bool HitTest(const int x, const int y) const {
+        // 容器可覆盖：例如 OverlayHost 自身占满画布，但只让子窗口接收鼠标。
+        [[nodiscard]] virtual bool HitTest(const int x, const int y) const {
             return bounds.Contains(Position{ x, y });
         }
+
+        // 子元素之前的最高优先级热区：滚动条等需要压住超出视口的子内容。
+        [[nodiscard]] virtual bool HitTestOverlay(const int /*x*/, const int /*y*/) const { return false; }
+
+        // 鼠标悬停时的指针语义；具体坐标用于命中边框/滑条等局部区域。
+        // 返回值只在指针形状变化时由前端应用一次，不参与每帧渲染。
+        [[nodiscard]] virtual MouseCursor CursorAt(const int /*x*/, const int /*y*/) const {
+            return mouseCursor;
+        }
+
+        void SetMouseCursor(const MouseCursor c) { mouseCursor = c; }
 
         // 内容区（去掉 padding）；容器可覆盖（例如边框再让出 1 格）
         [[nodiscard]] virtual Bounds ContentBounds() const {

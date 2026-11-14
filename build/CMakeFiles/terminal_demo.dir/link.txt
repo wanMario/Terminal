@@ -1,0 +1,3 @@
+C:\mingw64\bin\cmake.exe -E rm -f CMakeFiles\terminal_demo.dir/objects.a
+C:\mingw64\bin\ar.exe qc CMakeFiles\terminal_demo.dir/objects.a @CMakeFiles\terminal_demo.dir\objects1.rsp
+c:\mingw64\bin\g++.exe -g -static -Wl,--whole-archive CMakeFiles\terminal_demo.dir/objects.a -Wl,--no-whole-archive -o terminal_demo.exe -Wl,--out-implib,libterminal_demo.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\terminal_demo.dir\linkLibs.rsp

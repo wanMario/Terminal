@@ -86,7 +86,7 @@ namespace Terminal {
             t.textMuted = Color::OfIndex(8);
             t.textDisabled = Color::OfIndex(7);
             t.textStrong = Colors::Black;
-            t.background = Colors::Gray;
+            t.background = Colors::White;
             t.surface = Color::OfIndex(7);
             t.surfaceAlt = Color::OfIndex(15);
             t.accent = Colors::DarkBlue;
@@ -99,7 +99,7 @@ namespace Terminal {
             t.borderFocus = Colors::DarkBlue;
             t.hoverBg = Color::OfIndex(15);
             t.activeBg = Colors::DarkBlue;
-            t.activeText = Colors::White;
+            t.activeText = Colors::Blue;
             t.track = Color::OfIndex(8);
             t.trackFill = Colors::DarkBlue;
             t.thumb = Colors::DarkRed;

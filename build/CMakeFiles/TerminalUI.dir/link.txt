@@ -1,0 +1,2 @@
+C:\mingw64\bin\ar.exe qc lib\libTerminalUI.a CMakeFiles/TerminalUI.dir/src/TerminalUI.cpp.obj CMakeFiles/TerminalUI.dir/D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.cpp.obj CMakeFiles/TerminalUI.dir/D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/Number.cpp.obj
+C:\mingw64\bin\ranlib.exe lib\libTerminalUI.a

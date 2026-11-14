@@ -251,6 +251,7 @@ namespace Terminal {
 
         TextInput() { signature = "UITextInput";
             focusable = true;
+            mouseCursor = MouseCursor::IBeam;
             // 不设不透明底色：输入框坐在谁身上就用谁的底色（想改请显式 SetBackground）
             style = Style(Theme::Current().text, Theme::Current().surfaceAlt);
         }
