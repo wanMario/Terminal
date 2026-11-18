@@ -18,6 +18,7 @@
 
 // ---- Core：缓冲 / 元素基类 / 布局 / 输入 / 焦点 / 组件管理器 ---------
 #include "Core/TerminalBuffer.hpp"  // ConsoleBackBuffer：双缓冲 + 裁剪 + 脏矩形
+#include "Core/TerminalRichText.hpp" // TStr / TStrFmt：文字 + 颜色属性解析
 #include "Core/UI.hpp"              // UI 基类 + LayoutSpec + Flow/Align/LayoutPos
 #include "Core/Layout.hpp"          // Row/Column 弹性布局求解
 #include "Core/Input.hpp"           // 键盘读取（含 UTF-8 多字节拼装）
@@ -26,6 +27,8 @@
 #include "Core/TerminalJson.hpp"    // Json 适配层（底层 JsonCore）
 #include "Core/TerminalMessage.hpp" // MessageQueue：交互回调投递 / 主循环按对象处理
 #include "Core/TerminalAudio.hpp"   // AudioPlayer：MF 优先 / MCI 兜底、暂停、倍速
+#include "Core/TerminalLyrics.hpp"  // LRC 歌词解析
+#include "Core/TerminalArchive.hpp" // Archive：Bandizip 后端，zip/7z/rar 解压与密码
 #include "Core/TerminalComponentManager.hpp" // 类型注册表 + Json -> UI 树
 
 // ---- Components：元件 ------------------------------------------------
@@ -41,6 +44,8 @@
 #include "Components/TerminalBadge.hpp"     // Badge     胶囊标签（带状态点）
 #include "Components/TerminalSwitch.hpp"    // Switch    开关
 #include "Components/TerminalChoiceGroup.hpp" // ChoiceGroup 单选/多选
+#include "Components/TerminalTable.hpp"     // Table     表格（编辑/筛选/导入导出）
+#include "Components/TerminalFilePicker.hpp" // FilePicker 原生/终端文件选择器
 #include "Components/TerminalWindow.hpp"    // Window    可拖动/关闭弹窗
 #include "Components/TerminalOverlayHost.hpp" // OverlayHost 悬浮层（不占布局，只让子窗口命中）
 #include "Components/TerminalPageHolder.hpp"// PageHolder 可嵌套页面 + 局部队列

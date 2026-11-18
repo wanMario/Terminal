@@ -2,10 +2,10 @@
 	"artifacts" : 
 	[
 		{
-			"path" : "terminal_demo.exe"
+			"path" : "archive_dll_test.exe"
 		},
 		{
-			"path" : "terminal_demo.pdb"
+			"path" : "archive_dll_test.pdb"
 		}
 	],
 	"backtrace" : 1,
@@ -14,8 +14,8 @@
 		"commands" : 
 		[
 			"add_executable",
-			"target_link_options",
-			"target_link_libraries"
+			"target_link_libraries",
+			"add_dependencies"
 		],
 		"files" : 
 		[
@@ -29,25 +29,19 @@
 			{
 				"command" : 0,
 				"file" : 0,
-				"line" : 34,
+				"line" : 114,
 				"parent" : 0
 			},
 			{
 				"command" : 1,
 				"file" : 0,
-				"line" : 40,
+				"line" : 115,
 				"parent" : 0
 			},
 			{
 				"command" : 2,
 				"file" : 0,
-				"line" : 35,
-				"parent" : 0
-			},
-			{
-				"command" : 2,
-				"file" : 0,
-				"line" : 45,
+				"line" : 116,
 				"parent" : 0
 			}
 		]
@@ -59,33 +53,6 @@
 			[
 				{
 					"fragment" : "-g -std=c++20"
-				},
-				{
-					"backtrace" : 3,
-					"fragment" : "-Wall"
-				},
-				{
-					"backtrace" : 3,
-					"fragment" : "-Wextra"
-				}
-			],
-			"includes" : 
-			[
-				{
-					"backtrace" : 3,
-					"path" : "D:/wan1/C++/Libraries/ToolHead/Terminal/.."
-				},
-				{
-					"backtrace" : 3,
-					"path" : "D:/wan1/C++/Libraries/ToolHead/Terminal/../.."
-				},
-				{
-					"backtrace" : 3,
-					"path" : "D:/wan1/C++/Libraries/ToolHead/Terminal"
-				},
-				{
-					"backtrace" : 3,
-					"path" : "D:/wan1/C++/Libraries/ToolHead/Terminal/../DataStructure/Json"
 				}
 			],
 			"language" : "CXX",
@@ -93,7 +60,7 @@
 			{
 				"backtraces" : 
 				[
-					3
+					1
 				],
 				"standard" : "20"
 			},
@@ -107,10 +74,10 @@
 	[
 		{
 			"backtrace" : 3,
-			"id" : "TerminalUI::@6890427a1f51a3e7e1df"
+			"id" : "TerminalArchive::@6890427a1f51a3e7e1df"
 		}
 	],
-	"id" : "terminal_demo::@6890427a1f51a3e7e1df",
+	"id" : "archive_dll_test::@6890427a1f51a3e7e1df",
 	"link" : 
 	{
 		"commandFragments" : 
@@ -125,22 +92,7 @@
 			},
 			{
 				"backtrace" : 2,
-				"fragment" : "-static",
-				"role" : "flags"
-			},
-			{
-				"backtrace" : 3,
-				"fragment" : "lib\\libTerminalUI.a",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 4,
 				"fragment" : "-lkernel32",
-				"role" : "libraries"
-			},
-			{
-				"backtrace" : 4,
-				"fragment" : "-luser32",
 				"role" : "libraries"
 			},
 			{
@@ -150,8 +102,8 @@
 		],
 		"language" : "CXX"
 	},
-	"name" : "terminal_demo",
-	"nameOnDisk" : "terminal_demo.exe",
+	"name" : "archive_dll_test",
+	"nameOnDisk" : "archive_dll_test.exe",
 	"paths" : 
 	{
 		"build" : ".",
@@ -172,7 +124,7 @@
 		{
 			"backtrace" : 1,
 			"compileGroupIndex" : 0,
-			"path" : "examples/demo.cpp",
+			"path" : "tests/archive_dll_test.cpp",
 			"sourceGroupIndex" : 0
 		}
 	],

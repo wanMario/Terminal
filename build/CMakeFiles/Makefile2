@@ -63,7 +63,14 @@ CMAKE_BINARY_DIR = D:\wan1\C++\Libraries\ToolHead\Terminal\build
 
 # The main recursive "all" target.
 all: CMakeFiles/TerminalUI.dir/all
+all: CMakeFiles/TerminalArchive.dir/all
 all: CMakeFiles/terminal_demo.dir/all
+all: CMakeFiles/table_editor_demo.dir/all
+all: CMakeFiles/music_player_demo.dir/all
+all: CMakeFiles/zip_tool_demo.dir/all
+all: CMakeFiles/terminal_selftest.dir/all
+all: CMakeFiles/archive_dll_test.dir/all
+all: CMakeFiles/archive_formats_test.dir/all
 .PHONY : all
 
 # The main recursive "preinstall" target.
@@ -72,7 +79,14 @@ preinstall:
 
 # The main recursive "clean" target.
 clean: CMakeFiles/TerminalUI.dir/clean
+clean: CMakeFiles/TerminalArchive.dir/clean
 clean: CMakeFiles/terminal_demo.dir/clean
+clean: CMakeFiles/table_editor_demo.dir/clean
+clean: CMakeFiles/music_player_demo.dir/clean
+clean: CMakeFiles/zip_tool_demo.dir/clean
+clean: CMakeFiles/terminal_selftest.dir/clean
+clean: CMakeFiles/archive_dll_test.dir/clean
+clean: CMakeFiles/archive_formats_test.dir/clean
 .PHONY : clean
 
 #=============================================================================
@@ -82,7 +96,7 @@ clean: CMakeFiles/terminal_demo.dir/clean
 CMakeFiles/TerminalUI.dir/all:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalUI.dir\build.make CMakeFiles/TerminalUI.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalUI.dir\build.make CMakeFiles/TerminalUI.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=1,2,3,4 "Built target TerminalUI"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=3,4,5,6 "Built target TerminalUI"
 .PHONY : CMakeFiles/TerminalUI.dir/all
 
 # Build rule for subdir invocation for target.
@@ -102,13 +116,39 @@ CMakeFiles/TerminalUI.dir/clean:
 .PHONY : CMakeFiles/TerminalUI.dir/clean
 
 #=============================================================================
+# Target rules for target CMakeFiles/TerminalArchive.dir
+
+# All Build rule for target.
+CMakeFiles/TerminalArchive.dir/all:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=1,2 "Built target TerminalArchive"
+.PHONY : CMakeFiles/TerminalArchive.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/TerminalArchive.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 2
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/TerminalArchive.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/TerminalArchive.dir/rule
+
+# Convenience name for target.
+TerminalArchive: CMakeFiles/TerminalArchive.dir/rule
+.PHONY : TerminalArchive
+
+# clean rule for target.
+CMakeFiles/TerminalArchive.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/clean
+.PHONY : CMakeFiles/TerminalArchive.dir/clean
+
+#=============================================================================
 # Target rules for target CMakeFiles/terminal_demo.dir
 
 # All Build rule for target.
 CMakeFiles/terminal_demo.dir/all: CMakeFiles/TerminalUI.dir/all
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_demo.dir\build.make CMakeFiles/terminal_demo.dir/depend
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_demo.dir\build.make CMakeFiles/terminal_demo.dir/build
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=5,6 "Built target terminal_demo"
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=15,16 "Built target terminal_demo"
 .PHONY : CMakeFiles/terminal_demo.dir/all
 
 # Build rule for subdir invocation for target.
@@ -126,6 +166,162 @@ terminal_demo: CMakeFiles/terminal_demo.dir/rule
 CMakeFiles/terminal_demo.dir/clean:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_demo.dir\build.make CMakeFiles/terminal_demo.dir/clean
 .PHONY : CMakeFiles/terminal_demo.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/table_editor_demo.dir
+
+# All Build rule for target.
+CMakeFiles/table_editor_demo.dir/all: CMakeFiles/TerminalUI.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=13,14 "Built target table_editor_demo"
+.PHONY : CMakeFiles/table_editor_demo.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/table_editor_demo.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 6
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/table_editor_demo.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/table_editor_demo.dir/rule
+
+# Convenience name for target.
+table_editor_demo: CMakeFiles/table_editor_demo.dir/rule
+.PHONY : table_editor_demo
+
+# clean rule for target.
+CMakeFiles/table_editor_demo.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/clean
+.PHONY : CMakeFiles/table_editor_demo.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/music_player_demo.dir
+
+# All Build rule for target.
+CMakeFiles/music_player_demo.dir/all: CMakeFiles/TerminalUI.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=11,12 "Built target music_player_demo"
+.PHONY : CMakeFiles/music_player_demo.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/music_player_demo.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 6
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/music_player_demo.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/music_player_demo.dir/rule
+
+# Convenience name for target.
+music_player_demo: CMakeFiles/music_player_demo.dir/rule
+.PHONY : music_player_demo
+
+# clean rule for target.
+CMakeFiles/music_player_demo.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/clean
+.PHONY : CMakeFiles/music_player_demo.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/zip_tool_demo.dir
+
+# All Build rule for target.
+CMakeFiles/zip_tool_demo.dir/all: CMakeFiles/TerminalUI.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=19,20 "Built target zip_tool_demo"
+.PHONY : CMakeFiles/zip_tool_demo.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/zip_tool_demo.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 6
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/zip_tool_demo.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/zip_tool_demo.dir/rule
+
+# Convenience name for target.
+zip_tool_demo: CMakeFiles/zip_tool_demo.dir/rule
+.PHONY : zip_tool_demo
+
+# clean rule for target.
+CMakeFiles/zip_tool_demo.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/clean
+.PHONY : CMakeFiles/zip_tool_demo.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/terminal_selftest.dir
+
+# All Build rule for target.
+CMakeFiles/terminal_selftest.dir/all: CMakeFiles/TerminalUI.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=17,18 "Built target terminal_selftest"
+.PHONY : CMakeFiles/terminal_selftest.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/terminal_selftest.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 6
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/terminal_selftest.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/terminal_selftest.dir/rule
+
+# Convenience name for target.
+terminal_selftest: CMakeFiles/terminal_selftest.dir/rule
+.PHONY : terminal_selftest
+
+# clean rule for target.
+CMakeFiles/terminal_selftest.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/clean
+.PHONY : CMakeFiles/terminal_selftest.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/archive_dll_test.dir
+
+# All Build rule for target.
+CMakeFiles/archive_dll_test.dir/all: CMakeFiles/TerminalArchive.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=7,8 "Built target archive_dll_test"
+.PHONY : CMakeFiles/archive_dll_test.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/archive_dll_test.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/archive_dll_test.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/archive_dll_test.dir/rule
+
+# Convenience name for target.
+archive_dll_test: CMakeFiles/archive_dll_test.dir/rule
+.PHONY : archive_dll_test
+
+# clean rule for target.
+CMakeFiles/archive_dll_test.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/clean
+.PHONY : CMakeFiles/archive_dll_test.dir/clean
+
+#=============================================================================
+# Target rules for target CMakeFiles/archive_formats_test.dir
+
+# All Build rule for target.
+CMakeFiles/archive_formats_test.dir/all: CMakeFiles/TerminalArchive.dir/all
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/depend
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/build
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --progress-dir=D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles --progress-num=9,10 "Built target archive_formats_test"
+.PHONY : CMakeFiles/archive_formats_test.dir/all
+
+# Build rule for subdir invocation for target.
+CMakeFiles/archive_formats_test.dir/rule: cmake_check_build_system
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 4
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 CMakeFiles/archive_formats_test.dir/all
+	$(CMAKE_COMMAND) -E cmake_progress_start D:\wan1\C++\Libraries\ToolHead\Terminal\build\CMakeFiles 0
+.PHONY : CMakeFiles/archive_formats_test.dir/rule
+
+# Convenience name for target.
+archive_formats_test: CMakeFiles/archive_formats_test.dir/rule
+.PHONY : archive_formats_test
+
+# clean rule for target.
+CMakeFiles/archive_formats_test.dir/clean:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/clean
+.PHONY : CMakeFiles/archive_formats_test.dir/clean
 
 #=============================================================================
 # Special targets to cleanup operation of make.

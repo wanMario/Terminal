@@ -1,5 +1,12 @@
 D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/TerminalUI.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/TerminalArchive.dir
 D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/terminal_demo.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/table_editor_demo.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/music_player_demo.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/zip_tool_demo.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/terminal_selftest.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/archive_dll_test.dir
+D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/archive_formats_test.dir
 D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/test.dir
 D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/edit_cache.dir
 D:/wan1/C++/Libraries/ToolHead/Terminal/build/CMakeFiles/rebuild_cache.dir

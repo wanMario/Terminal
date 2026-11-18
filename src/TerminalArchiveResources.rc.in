@@ -1,0 +1,11 @@
+// Terminal / src / TerminalArchiveResources.rc.in
+// 由 CMake configure_file 生成，把 Bandizip x64 后端嵌进 TerminalArchive.dll。
+// 使用绝对路径，避免 windres 从 build 目录解析相对路径时找不到文件。
+
+#define IDR_TERMINAL_ARCHIVE_BZ          101
+#define IDR_TERMINAL_ARCHIVE_ARK         102
+#define IDR_TERMINAL_ARCHIVE_ARK_LGPL    103
+
+IDR_TERMINAL_ARCHIVE_BZ       RCDATA "@TERMINAL_ARCHIVE_BZ_PATH@"
+IDR_TERMINAL_ARCHIVE_ARK      RCDATA "@TERMINAL_ARCHIVE_ARK_PATH@"
+IDR_TERMINAL_ARCHIVE_ARK_LGPL RCDATA "@TERMINAL_ARCHIVE_ARK_LGPL_PATH@"

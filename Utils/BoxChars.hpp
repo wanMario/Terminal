@@ -81,9 +81,9 @@ namespace Terminal {
                     t.find("cygwin") != std::string::npos) return true;
             }
 
-            // 输出代码页不是 UTF-8 时，制表符必然显示不了
-            if (GetConsoleOutputCP() != CP_UTF8) return false;
-            // Win11 / 已开启 VT 的现代终端：保留 Unicode 边框
+            // Win11 / 已开启 VT 的现代终端：保留 Unicode 边框。
+            // 注意不要先检查 GetConsoleOutputCP()：Win11 的 ANSI 终端完全可能在 936 代码页下
+            // 运行，先按代码页判断会把正常环境误判成兼容模式。
             if (IsWindows11OrLater()) return true;
             if (OutputSupportsVt()) return true;
             return false;

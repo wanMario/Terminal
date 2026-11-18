@@ -28,11 +28,11 @@
       "preLaunchTask": "cmake: build"
     },
     {
-      "name": "调试 terminal_demo (--selftest)",
+      "name": "调试 terminal_selftest (CTest)",
       "type": "cppdbg",
       "request": "launch",
-      "program": "${workspaceFolder}/build/terminal_demo.exe",
-      "args": ["--selftest"],
+      "program": "${workspaceFolder}/build/terminal_selftest.exe",
+      "args": [],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}",
       "environment": [

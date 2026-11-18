@@ -45,5 +45,12 @@ set(CMAKE_MAKEFILE_PRODUCTS
 # Dependency information for all targets:
 set(CMAKE_DEPEND_INFO_FILES
   "CMakeFiles/TerminalUI.dir/DependInfo.cmake"
+  "CMakeFiles/TerminalArchive.dir/DependInfo.cmake"
   "CMakeFiles/terminal_demo.dir/DependInfo.cmake"
+  "CMakeFiles/table_editor_demo.dir/DependInfo.cmake"
+  "CMakeFiles/music_player_demo.dir/DependInfo.cmake"
+  "CMakeFiles/zip_tool_demo.dir/DependInfo.cmake"
+  "CMakeFiles/terminal_selftest.dir/DependInfo.cmake"
+  "CMakeFiles/archive_dll_test.dir/DependInfo.cmake"
+  "CMakeFiles/archive_formats_test.dir/DependInfo.cmake"
   )

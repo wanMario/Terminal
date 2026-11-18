@@ -4,7 +4,7 @@
 `ConsoleBackBuffer` 双缓冲绘制，不直接写控制台，因此不闪烁、不撕裂，且能同时支持
 **16 色属性**与 **24 位真彩**。
 
-- 语言 / 标准：C++20，header-only（`.hpp`），无需编译库
+- 语言 / 标准：C++20，核心为 header-only（`.hpp`）；同时提供 `TerminalUI` 静态库，统一归档 JsonCore 的非头文件实现
 - 平台：Windows（`WriteConsoleOutputW` / `_getch` / `SetConsoleMode`）
 - 工具链验证：MinGW-W64 GCC 14.2.0（`C:\mingw64\bin\g++.exe`）、CMake 3.30.4（`MinGW Makefiles`）
 
@@ -15,7 +15,7 @@
 ```
 Terminal/
 ├── Terminal.hpp                 # 一揽子聚合头（include 它即可）
-├── CMakeLists.txt               # STATIC 库 TerminalUI + terminal_demo 可执行 + ctest
+├── CMakeLists.txt               # TerminalUI 静态库 + TerminalArchive DLL + 4 个 demo + CTest
 ├── Utils/
 │   ├── Outputs.hpp              # 控制台句柄 / 光标 / 16 色 DWORD 常量（原有文件，保留）
 │   ├── TerminalChar.hpp         # SKey 枚举 + xChar 按键事件 + 完整按键表
@@ -33,6 +33,8 @@ Terminal/
 │   ├── TerminalMessage.hpp      # Message + MessageQueue + LocalMessageQueue（sender / Json 负载）
 │   ├── TerminalJson.hpp         # Json 适配层（底层 JsonCore，保留旧 Json API）
 │   ├── TerminalAudio.hpp        # AudioPlayer（Media Foundation 优先，MCI 兜底；运行时加载）
+│   ├── TerminalLyrics.hpp       # Lyrics（.lrc 时间轴 / 元信息 / offset 解析）
+│   ├── TerminalArchive.hpp      # Archive（动态加载 TerminalArchive.dll；libarchive 后端）
 │   └── TerminalComponentManager.hpp # 类型注册表 + Json -> UI 树（JsonCore）
 ├── Components/
 │   ├── TerminalText.hpp         # Text      静态文字（多行、对齐、主题化）
@@ -47,11 +49,23 @@ Terminal/
 │   ├── TerminalBadge.hpp        # Badge     胶囊标签（可带 ● 状态点）
 │   ├── TerminalSwitch.hpp       # Switch    开关（ON/OFF，消息驱动）
 │   ├── TerminalChoiceGroup.hpp  # ChoiceGroup 单选/多选（键盘 + 鼠标 + 消息）
+│   ├── TerminalTable.hpp        # Table     表格（TStrFmt 单元格 / 编辑 / 筛选 / CSV·XML）
+│   ├── TerminalFilePicker.hpp   # FilePicker 原生/终端文件选择器（文件/文件夹/多选）
 │   ├── TerminalWindow.hpp       # Window    可拖标题栏/可关闭弹窗，内容区可排版
 │   ├── TerminalOverlayHost.hpp  # OverlayHost 悬浮层（不占布局，只让子窗口命中）
 │   └── TerminalPageHolder.hpp   # PageHolder 可嵌套页面 + 每页独立局部队列
 ├── src/TerminalUI.cpp           # 静态库装配单元（提供 Terminal::Version() 符号）
-├── examples/demo.cpp            # 演示 + 自检 + 交互 + 布局转储 + 性能基准
+├── src/TerminalArchiveDll.cpp   # 方案 D：TerminalArchive.dll 的 C ABI（进程内 libarchive）
+├── third_party/libarchive/      # 随库分发的 libarchive / zlib / liblzma 静态库与头文件
+├── examples/
+│   ├── demo_common.hpp          # 共用交互主循环 / 单帧 / 布局转储 / 性能基准
+│   ├── demo.cpp                 # 样式展示：边框 / 排布 / TStrFmt / 滚动 / 两个 Window
+│   ├── table_editor_demo.cpp    # 表格编辑器：编辑 / 筛选 / CSV·XML 导出
+│   ├── music_player_demo.cpp    # 音乐播放器：D:\CloudMusic / 倍速 / 进度 / LRC 时间轴（从此播放·改时间）
+│   └── zip_tool_demo.cpp        # 压缩包工具：zip·7z·rar（libarchive DLL）
+├── tests/terminal_selftest.cpp  # 纯逻辑自检（CTest 单独运行）
+├── tests/archive_dll_test.cpp   # TerminalArchive.dll 加载 / C ABI 冒烟测试
+├── tests/archive_formats_test.cpp # ZIP 密码 / 7z / RAR 后端测试
 ├── assets/terminal_logo.png     # demo 用的半格像素图标
 ├── preview.png                  # 80x30 整屏预览（含滚动列表与图片）
 ├── preview_focus.png            # 按钮三态预览（常态 / 聚焦 / 交互）
@@ -94,12 +108,47 @@ cmake --build build --target TerminalUI
 g++ -std=c++20 -Wall -Wextra `
     -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
     -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
-    app.cpp -Lbuild/lib -lTerminalUI -static -o app.exe
+    app.cpp -Lbuild/lib -lTerminalUI -lole32 -luuid -lshell32 -static -o app.exe
 ```
 
 `-lTerminalUI` 要放在源文件/目标文件后面，静态链接才会正确解析。MinGW 加上 `-static`
 可以把 libstdc++ / libgcc / libwinpthread 一起静态链入，避免系统里其他 MinGW 的旧 DLL
 抢先加载导致“找不到入口点”。
+
+### Archive DLL（方案 D）
+
+如果不想让 C++ 调用方包含 `TerminalArchive.hpp`，构建 `TerminalArchive` 目标：
+
+```powershell
+cmake --build build --target TerminalArchive
+# MinGW 产物：build/TerminalArchive.dll
+```
+
+DLL 只导出 C ABI，内部使用 **静态链接的 libarchive**，在进程内完成 ZIP/7z 创建与 ZIP/7z/RAR 解压；不释放 `bz.exe`、不启动任何子进程。导出函数：
+
+```text
+TerminalArchive_Available() -> int
+TerminalArchive_BandizipPath(char* buffer, int bufferSize)   # 兼容旧调用，返回 "libarchive (built-in)"
+TerminalArchive_Create(archive, entries, count, password, level, format, recurse, out, outSize, err, errSize) -> int
+TerminalArchive_Extract(archive, destination, password, overwrite, out, outSize, err, errSize) -> int
+TerminalArchive_List(archive, password, out, outSize, err, errSize) -> int
+TerminalArchive_Test(archive, password, out, outSize, err, errSize) -> int
+```
+
+- `format`：`0` 自动、`1` zip、`2` 7z（`3` rar 仅解压）。
+- 返回 `1` 成功、`0` 失败；`error` 缓冲区接收失败原因。
+- 后端源码在 `third_party/libarchive/`：`libarchive.a` + `libzlibstatic.a` + `liblzma.a`，
+  链接时只额外使用 Windows 系统库 `bcrypt` / `xmllite` / `ole32`。
+- 因此**分发时仍然只需要 `TerminalArchive.dll` 一个文件**，不需要 `bin/bz.exe`，也不需要安装 Bandizip。
+- ZIP 创建支持 ZipCrypto 密码；读取 ZIP / RAR 密码可用。libarchive 的 7z 读取不支持
+  “加密头”（Bandizip 生成的带密码 7z 默认就是加密头），会在 `error` 中明确报错。
+- DLL 已用 `-static -static-libgcc -static-libstdc++` 链接，`objdump -p` 只显示
+  系统 DLL（`KERNEL32.dll` / UCRT / `bcrypt.dll` / `ole32.dll` / `XmlLite.dll`），
+  不依赖 MinGW 的 `libstdc++-6.dll / libgcc_s_seh-1.dll / libwinpthread-1.dll`。
+
+`ctest` 中的 `archive_dll_api` 会加载 DLL，执行 ZIP 创建 / 列表 / 解压；
+`archive_formats_api` 进一步覆盖 ZIP 密码与 7z 往返。RAR 解压可在测试程序后追加
+一个 `.rar` 样本路径。
 
 ### 直接用 g++
 
@@ -108,7 +157,8 @@ g++ -std=c++20 -Wall -Wextra -static `
     -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
     -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
     examples/demo.cpp src/TerminalUI.cpp `
-    ../DataStructure/Json/JsonCore.cpp ../DataStructure/Json/Number.cpp -o demo.exe
+    ../DataStructure/Json/JsonCore.cpp ../DataStructure/Json/Number.cpp -o terminal_demo.exe `
+    -lole32 -luuid -lshell32
 ```
 
 也可以改用静态库（先构建 `TerminalUI`）：
@@ -117,16 +167,35 @@ g++ -std=c++20 -Wall -Wextra -static `
 g++ -std=c++20 -Wall -Wextra -static `
     -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
     -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
-    examples/demo.cpp -Lbuild/lib -lTerminalUI -o demo.exe
+    examples/demo.cpp -Lbuild/lib -lTerminalUI -lole32 -luuid -lshell32 -o terminal_demo.exe
 ```
 
 `src/TerminalUI.cpp` 提供 `Terminal::Version()`；JsonCore 的 `.cpp` 提供解析/容器实现，
 漏掉任一部分都会链接失败。
 
+其他三个 demo 只需替换上面的源文件：
+
+```powershell
+g++ -std=c++20 -Wall -Wextra -static `
+    -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
+    -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
+    examples/table_editor_demo.cpp -Lbuild/lib -lTerminalUI -lole32 -luuid -lshell32 -o table_editor_demo.exe
+```
+
+`music_player_demo.cpp` / `zip_tool_demo.cpp` 同理。自检程序单独编译：
+
+```powershell
+g++ -std=c++20 -Wall -Wextra -static `
+    -ID:/wan1/C++/Libraries/ToolHead -ID:/wan1/C++/Libraries -ID:/wan1/C++/Libraries/ToolHead/Terminal `
+    -ID:/wan1/C++/Libraries/ToolHead/DataStructure/Json `
+    tests/terminal_selftest.cpp -Lbuild/lib -lTerminalUI -lole32 -luuid -lshell32 -o terminal_selftest.exe
+```
+
 依赖只有同仓库的 `ToolHead/Math/Geometry/G2D`（`Point.hpp` / `Rect.hpp`）和
 `ToolHead/DataStructure/Json`（JsonCore）。`UIImage` 的 PNG/JPG 解码通过运行时加载
 `windowscodecs.dll` / `ole32.dll` 完成，音频后端通过运行时加载 `mfplay.dll` / `winmm.dll`，
-所以 g++ 命令**不需要**额外写 `-lwindowscodecs -lole32 -lmfplay -lwinmm`。
+所以 g++ 命令**不需要**额外写 `-lwindowscodecs -lmfplay -lwinmm`；但原生文件选择器
+`PickNative()` 使用 `IFileOpenDialog`，需要 `-lole32 -luuid -lshell32`（CMake 已自动处理）。
 
 ---
 
@@ -180,6 +249,77 @@ int main() {
 `Text` / `Button` / `Slider` 等叶子按内容自适应。`Border` 的 `ContentBounds()` 会先让出 1 格边框，
 `Panel` 有标题时让出 1 行标题栏。
 
+### 富文本：TStrFmt / TStr
+
+`TStrFmt` 把带控制符的 UTF-8 字符串解析成若干 `TStrRun{ text, Style }`；
+`ConsoleBackBuffer` 的数据结构不变，`TStr::WriteTo()` 只是分段调用 `WriteText`。
+
+```cpp
+using namespace Terminal;
+
+const Style base(Color::Parse("#ffffaa"), Colors::Black);
+TStrFmt fmt(base);                          // 基础颜色
+const auto rich = fmt.Parse(
+    "{Red}这是{#ffffff}一{#FFFFFF}个{/r}变"
+    "{&12}色{DarkBlue}字{Blue}符串！{r}用来\\{\\}表示，"
+    "还可以{/r*0.8 + Red*0.6}混色和{/c}彩虹!!!!!{/r}");
+
+rich.WriteTo(buf, 2, 3);                    // 按段写入文字 + Style
+```
+
+| 控制符 | 含义 |
+|---|---|
+| `{#RRGGBB}` / `{#RGB}` | `Color::Parse` 解析 RGB |
+| `{&x}` | 16 色索引 `x`（0~15） |
+| `{Red}` / `{DarkBlue}` | 具名颜色 |
+| `{/r}` | 重置为基础颜色（`{r}` 是兼容简写） |
+| `{/c}` | 彩虹模式，从红色开始，每个 Unicode 码点推进 |
+| `\{` `\}` `\\` | 输出字面量 `{` `}` `\` |
+
+颜色表达式按 `*` > `+` / `|` 的优先级解析：
+
+```text
+{/r*0.8 + Red*0.6}   // 基础色 ×0.8 + 红色 ×0.6，逐通道截断到 0~255
+{!Red}               // 逐通道 0xff - x
+{Red | Blue}         // (a+b)*0.5
+{(Red + Blue)*0.5}   // 括号改变优先级
+```
+
+同一 `Style` 的相邻文字会自动合并成一段，CJK / UTF-8 按码点处理；
+`TStr::Plain()` 取纯文本，`TStr::Width()` 计算最大行显示宽度。
+
+### 表格（Table）
+
+`Table` 是独立组件，不内建滚动条；把 `MeasureWidth()` / `MeasureHeight()` 交给外层
+`ScrollView` 即可获得横/竖滚动。表头和单元格都按 `TStrFmt` 解析，因此单元格里可以直接写
+`{Red}Alice{/r}`；编辑提交时保存原串，不会把颜色丢掉。
+
+```cpp
+auto table = std::make_shared<Table>();
+table->AddColumn("姓名", 10);
+table->AddColumn("年龄", 6, LayoutPos::Right);
+table->AddColumn("状态", 10);
+
+table->AddRow({ "{Red}Alice{/r}", "20", "{#00ff88}在线{/r}" });
+table->AddRow({ "Bob", "31", "离线" });
+table->SetEditable(true);
+table->layout.width = table->MeasureWidth();
+table->layout.height = table->MeasureHeight();
+scroll->AddChild(table);
+```
+
+- **编辑**：单击选中，双击进入编辑；键盘 `Enter` / 可打印字符也可进入，`Enter` 提交，
+  `Esc` 取消，方向键/Tab 移动。提交时触发 `onCellChanged(row, col, text)`。
+- **筛选**：`SetFilter(col, query)` 只匹配该列的 `TStrFmt` 可见纯文字（不区分 ASCII
+  大小写），`ClearFilter()` 恢复；`VisibleRows()` 返回真实数据行下标，因此筛选不会改变
+  编辑/选中使用的行列编号。
+- **导入导出**：`ImportCsv / ExportCsv`；`ImportExcel / ExportExcel` 接受
+  `.csv`、`.tsv` 与 SpreadsheetML `.xml`（Excel 2003 XML，Excel 能直接打开）。
+  **不提供 `.xlsx`**：本库不引入 zip/deflate 依赖，`ExportExcel("*.xlsx")` 返回 `false`。
+  CSV/XML 保留单元格原始 `TStrFmt` 串；不保留颜色样式（样式由运行时主题决定）。
+- **外观**：`headerRow`、`striped`、`showGrid` 可配；边框自动走
+  `Box::Effective(Box::Single)`，ASCII 兼容模式下自动降级。
+
 ### 元件一览
 
 | 元件 | 关键成员 / 方法 | 键盘 | 鼠标 |
@@ -196,6 +336,8 @@ int main() {
 | `Badge` | `SetText / SetDot / SetColors(bg, fg)`，宽度 = 文本 + 圆点/内边距 | — | — |
 | `Switch` | `SetLabel / SetValue / SetColors(on, off) / OnChange` | Space/Enter | 整行悬停高亮、点击切换 |
 | `ChoiceGroup` | `SetOptions / SetMulti / SetSelected / OnChange` | Up/Down、Space/Enter | 悬停行高亮、点击行选中/切换 |
+| `Table` | `AddColumn / AddRow / SetCell / GetCell / SetEditable / SetFilter / ClearFilter / AutoFitColumns / ImportCsv / ExportCsv / ImportExcel / ExportExcel` | 方向键/Tab 移动、Enter/输入进入编辑、Esc 取消 | 单击选中、双击编辑；可编辑单元格为 IBeam |
+| `FilePickerWindow` | `Open / Cancel / NavigateTo / Refresh / IsDone / WasCancelled / Result / onAccepted / onCancelled`；`PickNative(options)` 为 Windows 原生入口 | Esc 取消 | 目录行/文件行选择、按钮打开、路径输入回车导航 |
 | `OverlayHost` | `AddChild / Arrange`、`HitTest` 只覆盖可见子窗口 | — | 不占布局高度的悬浮层，窗口可拖到全屏，窗口外点击穿透 |
 | `Window` | `SetTitle / SetFrame / MoveTo / Show / SetClosable / SetDraggable / SetResizable / SetMinSize` | Esc 由宿主处理 | 标题栏拖动、右上角 `[x]` 关闭；按住 Ctrl 边框高亮 8 个把手后可拖拽改尺寸，内容区子控件照常接收鼠标 |
 
@@ -539,6 +681,77 @@ root->AddChild(overlay);
 `parent->GetBounds()` 不会被缩成窗口自身（这是“只能缩小、放大被夹住”的根因）；
 命中测试只遍历可见子窗口，窗口外的鼠标会穿透到下层控件。
 
+### 文件选择器（FilePicker）
+
+**A. Windows 原生对话框**
+
+```cpp
+FilePickerOptions opts;
+opts.title = "选择文件";
+opts.allowMultiple = true;                 // 多选
+opts.selectFolders = false;                // true = 选文件夹
+opts.filters = { { "代码", "*.cpp;*.hpp" }, { "所有文件", "*.*" } };
+
+const auto paths = PickNative(opts);       // 阻塞，返回空表示取消
+```
+
+`PickNative` 使用 `IFileOpenDialog`：支持文件类型筛选、文件夹选择、多选，标题栏和
+Windows 原生对话框一致。文件夹模式使用 `FOS_PICKFOLDERS`；多选用 `FOS_ALLOWMULTISELECT`。
+
+**B. Terminal Window 对话框**
+
+```cpp
+auto picker = std::make_shared<FilePickerWindow>(opts);
+picker->Show(false);
+picker->MoveTo(4, 2);
+picker->onAccepted = [](const std::vector<std::string>& paths) { /* ... */ };
+picker->onCancelled = [] { /* ... */ };
+overlay->AddChild(picker);
+
+// 按钮点击时
+picker->Open();
+// 外部主循环中查询
+if (picker->IsDone()) { auto result = picker->Result(); }
+```
+
+- 目录导航：路径输入框回车跳转；“上级”按钮回到父目录。
+- 列表：目录项显示 `[DIR]`；文件按当前筛选器匹配；单击选中，双击目录进入、双击文件直接返回；
+  点“打开”时选中目录会进入该目录，选中文件则返回；多选模式下可一次返回多个文件。
+- 文件夹模式：列表只显示目录；未选中任何目录时返回当前目录。
+- `Show(false)` 只是隐藏；构造时不会扫描文件系统，`Open()` / `NavigateTo()` 才读取目录。
+- 终端版不阻塞主循环，因此没有“模态等待”语义；调用方在 `IsDone()` 后取结果。
+
+原生对话框在 MinGW 下需要额外链接 `ole32 / uuid / shell32`；CMake 已自动加上。
+
+### 压缩包（Archive）
+
+压缩包后端使用 **TerminalArchive.dll**：内部的 libarchive 静态库在进程内完成
+zip/deflate/7z/rar 编解码，不调用 `bz.exe`，也不需要安装 Bandizip。C++ API 直接动态加载 DLL：
+
+```cpp
+#include <Terminal/Terminal.hpp>
+
+Archive::Options options;
+options.password = "secret";       // 空 = 不加密
+options.level = 5;                 // 0=仅存储，9=最大压缩
+options.overwrite = true;          // 解压时覆盖
+
+// .zip / .7z 可创建；.rar 只读（后端没有 RAR 编码器）
+auto created = Archive::Create("out/data.zip", { "assets", "README.md" }, options);
+auto extracted = Archive::Extract("out/data.zip", "out/unpacked", options);
+auto listed = Archive::List("out/data.zip", "secret");
+auto tested = Archive::Test("out/data.zip", "secret");
+```
+
+- `Archive::Available()` 检查 exe 同目录的 `TerminalArchive.dll` 是否存在且导出完整。
+  构建目录里 DLL 与 demo 同目录，直接运行即可；分发时把 DLL 和 exe 放一起。
+- 支持 `.zip`、`.7z`、`.rar` 解压；`.zip` 与 `.7z` 创建。
+- ZIP 创建支持 ZipCrypto 密码；ZIP / RAR 解压支持密码，错误密码返回 `ok=false`。
+  libarchive 不能读取“加密头”的 7z（Bandizip 的带密码 7z 默认如此），会明确报错。
+- 创建格式由扩展名自动推断，也可用 `Options::format` 显式指定。
+- 不经过 `cmd` / PowerShell，也不启动子进程；密码只作为 C ABI 参数传入。
+- DLL 缺失时不会崩溃：`Available()` 返回 false，API 返回带 `error` 的失败结果。
+
 ### 音频（AudioPlayer）
 
 ```cpp
@@ -560,9 +773,29 @@ std::cout << player.BackendName() << " " << player.Position() << "/" << player.D
 - 两个后端都用 `LoadLibraryW` + `GetProcAddress`，使用方不需要额外 `-lwinmm/-lmfplay`。
 - `SpeedSupported()` 可查询当前文件和后端是否接受倍速；MCI 对 waveaudio 的 `speed` 通常不支持。
 - `OnMessage` 支持 `play / pause / resume / stop / seek / speed`，方便接页面消息队列。
-- demo 的 `MusicWindow` 直接扫描 `D:\CloudMusic`（递归，MP3/FLAC/WAV/M4A/AAC/OGG/WMA），
-  用 `ChoiceGroup` 选曲、`Slider` 拖进度 / 调倍速，播放/暂停/上一首/下一首/停止全部走按钮与消息；
-  `OnUpdate()` 每帧泵 MF 消息，播完自动下一首。
+- `music_player_demo` 扫描 `D:\CloudMusic`（递归，MP3/FLAC/WAV/M4A/AAC/OGG/WMA），
+  页面内嵌左右两栏：左侧 `ChoiceGroup` 歌单，右侧进度 / 倍速 `Slider`、播放按钮和 LRC 时间轴编辑器；
+  不再使用 `Window` / `OverlayHost`，因此不会阻塞拖动渲染。`OnUpdate()` 每帧泵 MF 消息，播完自动下一首。
+  进度条拖动时暂停自动回写，因此暂停状态也可以直接拖到任意位置，松开后才 `Seek`。
+
+### 歌词（Lyrics / LRC 编辑）
+
+```cpp
+auto doc = Lyrics::Document::LoadForAudio("music.mp3"); // 同目录同名 .lrc，找不到返回空文档
+doc.lines.push_back({ 12.5, "新的歌词" });              // 秒 + 文本
+doc.lines[0].text = "改写第一句";
+doc.SaveForAudio("music.mp3");                         // 写回 music.lrc（自动创建父目录）
+
+auto now = doc.At(player.Position());                  // 当前时间对应的歌词，空串表示还没到
+```
+
+- `Parse` 支持 `[ti:] / [ar:] / [al:] / [offset:]`、`[mm:ss]`、`[mm:ss.xx]` 与一行多时间标签。
+- `FormatTime` / `ParseTime` 是 `mm:ss.xx` 的互转；`Serialize` 会按时间排序并保留元信息。
+- `SavePath` / `SaveForAudio` 写 UTF-8 `.lrc`；`LrcPathForAudio` 只推导路径，不要求文件存在。
+- demo 的 LRC 时间轴：单击一行选中，`▶` 标出当前播放句；`从此播放` 跳到选中句时间并开始播放；
+  `时间` 输入框和 `歌词` 输入框都可按 Enter 应用，改时间后自动按时间重排；`此刻插入` 在当前播放
+  位置插入，`删除所选` 删除选中句，`保存` 写回同名 `.lrc`；切歌前会自动保存未提交的修改。
+  播放推进时只刷新新旧两行，不重建整条时间轴；播放跟随只在当前句走出视口时滚动一行。
 
 ### 边框兼容（只判断 ANSI / Unicode 能力）
 
@@ -695,18 +928,29 @@ mgr.Arrange(Rect2Di{ 0, 0, 60, 20 });
 
 ## demo 的入口
 
+自检已从 demo 中拆出，由 CTest 运行（1 个逻辑自检 + 2 个 Archive DLL 测试 + 4 个 demo 的 `--frame` 冒烟测试）：
+
 ```powershell
-terminal_demo --selftest     # 192 项逻辑自检（颜色/UTF-8/缓冲/布局/元件/边框降级/图片/滚动双轴/消息/PageHolder/新控件/鼠标/指针样式/窗口缩放）
-terminal_demo --frame        # 渲染一帧，按 24 位真彩输出 ANSI（可重定向到文件检查配色）
-terminal_demo --dump         # 打印布局树（bounds + pref，排查布局问题）
-terminal_demo                # 交互：Tab 焦点、拖动 R/G/B 滑杆改昵称颜色、左卡片滚轮滚动、右卡片半格像素图标、
-                             #       悬浮音乐 Window（D:\CloudMusic 选曲/播放/暂停/倍速/进度），Esc/q 退出
-terminal_demo --truecolor    # 强制走 ANSI 真彩刷新
-terminal_demo --mono         # 强制 16 色属性刷新（老 conhost / 远程终端排查用）
-terminal_demo --bench 200    # 渲染性能基准（脏标记 / 全量重绘 / ANSI 生成三条数据）
+cd build; ctest --output-on-failure
+# 或单独运行：build\terminal_selftest.exe
 ```
 
-`--selftest` 会被 `ctest` 调用，返回非 0 即失败。
+四个演示各自独立，参数一致：
+
+```powershell
+terminal_demo --frame        # 样式展示：边框 / 排布 / TStrFmt / 滚动 / 两个 Window（文字 + 单选框）
+table_editor_demo --frame    # 表格编辑器：可编辑 / 姓名筛选 / 添加行 / 导出 CSV·XML
+music_player_demo --frame    # 音乐播放器（页面内嵌，无 Window）：播放控制 + LRC 时间轴流式编辑/保存
+zip_tool_demo --frame        # 压缩包工具：zip·7z 创建 / 解压 / 列表 / 测试 / 密码
+
+# 任意 demo 都支持：
+#   --dump       打印布局树（bounds + pref，排查布局问题）
+#   --bench 200  渲染性能基准（脏标记 / 全量重绘 / ANSI 生成三条数据）
+#   --truecolor  强制 ANSI 真彩；--mono 强制 16 色属性
+```
+
+不带参数启动即为交互模式：Tab 切换焦点、鼠标点击/拖动/滚轮、Esc 或 q 退出。
+`terminal_selftest` 现在由 CTest 调用，返回非 0 即失败。
 
 ---
 

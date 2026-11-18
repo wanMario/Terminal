@@ -51,9 +51,15 @@ namespace Terminal {
 
         //---------- 内容 ----------
         void SetText(const std::string& text) {
+            if (m_text == text) return;
+            const int oldW = MeasureWidth();
+            const std::size_t oldLines = m_lines.size();
             m_text = text;
             RebuildLines();
-            InvalidateLayout();   // 行数变化会影响高度
+            // 文本高度/自然宽度没变时只重绘这一块，避免每帧歌词变化都把
+            // layoutDirty 冒泡到根节点、触发整页重排。
+            if (m_lines.size() != oldLines || MeasureWidth() != oldW) InvalidateLayout();
+            else Invalidate();
         }
 
         [[nodiscard]] std::string GetText() const { return m_text; }

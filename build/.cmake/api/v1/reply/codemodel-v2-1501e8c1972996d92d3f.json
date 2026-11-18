@@ -1,0 +1,132 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"jsonFile" : "directory-.-Debug-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.16"
+					},
+					"projectIndex" : 0,
+					"source" : ".",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"name" : "Debug",
+			"projects" : 
+			[
+				{
+					"directoryIndexes" : 
+					[
+						0
+					],
+					"name" : "TerminalUI",
+					"targetIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						4,
+						5,
+						6,
+						7,
+						8
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 0,
+					"id" : "TerminalArchive::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-TerminalArchive-Debug-591537917e934f3ccbd5.json",
+					"name" : "TerminalArchive",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "TerminalUI::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-TerminalUI-Debug-05e9255ff3fae936da65.json",
+					"name" : "TerminalUI",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "archive_dll_test::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-archive_dll_test-Debug-f38aaf837c49aa70c17c.json",
+					"name" : "archive_dll_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "archive_formats_test::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-archive_formats_test-Debug-ed44274d18f45ac664a4.json",
+					"name" : "archive_formats_test",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "music_player_demo::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-music_player_demo-Debug-293aaa0d6f0ee6f2ee4e.json",
+					"name" : "music_player_demo",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "table_editor_demo::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-table_editor_demo-Debug-0f4dfb920522d04f65ab.json",
+					"name" : "table_editor_demo",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "terminal_demo::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-terminal_demo-Debug-10a65c479cfb92cb8720.json",
+					"name" : "terminal_demo",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "terminal_selftest::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-terminal_selftest-Debug-50189eaa113c24b8b948.json",
+					"name" : "terminal_selftest",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 0,
+					"id" : "zip_tool_demo::@6890427a1f51a3e7e1df",
+					"jsonFile" : "target-zip_tool_demo-Debug-7f1413e4ee99520edf75.json",
+					"name" : "zip_tool_demo",
+					"projectIndex" : 0
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+		"source" : "D:/wan1/C++/Libraries/ToolHead/Terminal"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

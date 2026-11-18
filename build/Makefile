@@ -139,6 +139,19 @@ TerminalUI/fast:
 .PHONY : TerminalUI/fast
 
 #=============================================================================
+# Target rules for targets named TerminalArchive
+
+# Build rule for target.
+TerminalArchive: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 TerminalArchive
+.PHONY : TerminalArchive
+
+# fast build rule for target.
+TerminalArchive/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/build
+.PHONY : TerminalArchive/fast
+
+#=============================================================================
 # Target rules for targets named terminal_demo
 
 # Build rule for target.
@@ -150,6 +163,84 @@ terminal_demo: cmake_check_build_system
 terminal_demo/fast:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_demo.dir\build.make CMakeFiles/terminal_demo.dir/build
 .PHONY : terminal_demo/fast
+
+#=============================================================================
+# Target rules for targets named table_editor_demo
+
+# Build rule for target.
+table_editor_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 table_editor_demo
+.PHONY : table_editor_demo
+
+# fast build rule for target.
+table_editor_demo/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/build
+.PHONY : table_editor_demo/fast
+
+#=============================================================================
+# Target rules for targets named music_player_demo
+
+# Build rule for target.
+music_player_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 music_player_demo
+.PHONY : music_player_demo
+
+# fast build rule for target.
+music_player_demo/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/build
+.PHONY : music_player_demo/fast
+
+#=============================================================================
+# Target rules for targets named zip_tool_demo
+
+# Build rule for target.
+zip_tool_demo: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 zip_tool_demo
+.PHONY : zip_tool_demo
+
+# fast build rule for target.
+zip_tool_demo/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/build
+.PHONY : zip_tool_demo/fast
+
+#=============================================================================
+# Target rules for targets named terminal_selftest
+
+# Build rule for target.
+terminal_selftest: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 terminal_selftest
+.PHONY : terminal_selftest
+
+# fast build rule for target.
+terminal_selftest/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/build
+.PHONY : terminal_selftest/fast
+
+#=============================================================================
+# Target rules for targets named archive_dll_test
+
+# Build rule for target.
+archive_dll_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 archive_dll_test
+.PHONY : archive_dll_test
+
+# fast build rule for target.
+archive_dll_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/build
+.PHONY : archive_dll_test/fast
+
+#=============================================================================
+# Target rules for targets named archive_formats_test
+
+# Build rule for target.
+archive_formats_test: cmake_check_build_system
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 archive_formats_test
+.PHONY : archive_formats_test
+
+# fast build rule for target.
+archive_formats_test/fast:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/build
+.PHONY : archive_formats_test/fast
 
 D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.obj: D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.cpp.obj
 .PHONY : D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.obj
@@ -223,6 +314,102 @@ examples/demo.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_demo.dir\build.make CMakeFiles/terminal_demo.dir/examples/demo.cpp.s
 .PHONY : examples/demo.cpp.s
 
+examples/music_player_demo.obj: examples/music_player_demo.cpp.obj
+.PHONY : examples/music_player_demo.obj
+
+# target to build an object file
+examples/music_player_demo.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/examples/music_player_demo.cpp.obj
+.PHONY : examples/music_player_demo.cpp.obj
+
+examples/music_player_demo.i: examples/music_player_demo.cpp.i
+.PHONY : examples/music_player_demo.i
+
+# target to preprocess a source file
+examples/music_player_demo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/examples/music_player_demo.cpp.i
+.PHONY : examples/music_player_demo.cpp.i
+
+examples/music_player_demo.s: examples/music_player_demo.cpp.s
+.PHONY : examples/music_player_demo.s
+
+# target to generate assembly for a file
+examples/music_player_demo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\music_player_demo.dir\build.make CMakeFiles/music_player_demo.dir/examples/music_player_demo.cpp.s
+.PHONY : examples/music_player_demo.cpp.s
+
+examples/table_editor_demo.obj: examples/table_editor_demo.cpp.obj
+.PHONY : examples/table_editor_demo.obj
+
+# target to build an object file
+examples/table_editor_demo.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/examples/table_editor_demo.cpp.obj
+.PHONY : examples/table_editor_demo.cpp.obj
+
+examples/table_editor_demo.i: examples/table_editor_demo.cpp.i
+.PHONY : examples/table_editor_demo.i
+
+# target to preprocess a source file
+examples/table_editor_demo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/examples/table_editor_demo.cpp.i
+.PHONY : examples/table_editor_demo.cpp.i
+
+examples/table_editor_demo.s: examples/table_editor_demo.cpp.s
+.PHONY : examples/table_editor_demo.s
+
+# target to generate assembly for a file
+examples/table_editor_demo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\table_editor_demo.dir\build.make CMakeFiles/table_editor_demo.dir/examples/table_editor_demo.cpp.s
+.PHONY : examples/table_editor_demo.cpp.s
+
+examples/zip_tool_demo.obj: examples/zip_tool_demo.cpp.obj
+.PHONY : examples/zip_tool_demo.obj
+
+# target to build an object file
+examples/zip_tool_demo.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/examples/zip_tool_demo.cpp.obj
+.PHONY : examples/zip_tool_demo.cpp.obj
+
+examples/zip_tool_demo.i: examples/zip_tool_demo.cpp.i
+.PHONY : examples/zip_tool_demo.i
+
+# target to preprocess a source file
+examples/zip_tool_demo.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/examples/zip_tool_demo.cpp.i
+.PHONY : examples/zip_tool_demo.cpp.i
+
+examples/zip_tool_demo.s: examples/zip_tool_demo.cpp.s
+.PHONY : examples/zip_tool_demo.s
+
+# target to generate assembly for a file
+examples/zip_tool_demo.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\zip_tool_demo.dir\build.make CMakeFiles/zip_tool_demo.dir/examples/zip_tool_demo.cpp.s
+.PHONY : examples/zip_tool_demo.cpp.s
+
+src/TerminalArchiveDll.obj: src/TerminalArchiveDll.cpp.obj
+.PHONY : src/TerminalArchiveDll.obj
+
+# target to build an object file
+src/TerminalArchiveDll.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/src/TerminalArchiveDll.cpp.obj
+.PHONY : src/TerminalArchiveDll.cpp.obj
+
+src/TerminalArchiveDll.i: src/TerminalArchiveDll.cpp.i
+.PHONY : src/TerminalArchiveDll.i
+
+# target to preprocess a source file
+src/TerminalArchiveDll.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/src/TerminalArchiveDll.cpp.i
+.PHONY : src/TerminalArchiveDll.cpp.i
+
+src/TerminalArchiveDll.s: src/TerminalArchiveDll.cpp.s
+.PHONY : src/TerminalArchiveDll.s
+
+# target to generate assembly for a file
+src/TerminalArchiveDll.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalArchive.dir\build.make CMakeFiles/TerminalArchive.dir/src/TerminalArchiveDll.cpp.s
+.PHONY : src/TerminalArchiveDll.cpp.s
+
 src/TerminalUI.obj: src/TerminalUI.cpp.obj
 .PHONY : src/TerminalUI.obj
 
@@ -247,6 +434,78 @@ src/TerminalUI.cpp.s:
 	$(MAKE) $(MAKESILENT) -f CMakeFiles\TerminalUI.dir\build.make CMakeFiles/TerminalUI.dir/src/TerminalUI.cpp.s
 .PHONY : src/TerminalUI.cpp.s
 
+tests/archive_dll_test.obj: tests/archive_dll_test.cpp.obj
+.PHONY : tests/archive_dll_test.obj
+
+# target to build an object file
+tests/archive_dll_test.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/tests/archive_dll_test.cpp.obj
+.PHONY : tests/archive_dll_test.cpp.obj
+
+tests/archive_dll_test.i: tests/archive_dll_test.cpp.i
+.PHONY : tests/archive_dll_test.i
+
+# target to preprocess a source file
+tests/archive_dll_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/tests/archive_dll_test.cpp.i
+.PHONY : tests/archive_dll_test.cpp.i
+
+tests/archive_dll_test.s: tests/archive_dll_test.cpp.s
+.PHONY : tests/archive_dll_test.s
+
+# target to generate assembly for a file
+tests/archive_dll_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_dll_test.dir\build.make CMakeFiles/archive_dll_test.dir/tests/archive_dll_test.cpp.s
+.PHONY : tests/archive_dll_test.cpp.s
+
+tests/archive_formats_test.obj: tests/archive_formats_test.cpp.obj
+.PHONY : tests/archive_formats_test.obj
+
+# target to build an object file
+tests/archive_formats_test.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/tests/archive_formats_test.cpp.obj
+.PHONY : tests/archive_formats_test.cpp.obj
+
+tests/archive_formats_test.i: tests/archive_formats_test.cpp.i
+.PHONY : tests/archive_formats_test.i
+
+# target to preprocess a source file
+tests/archive_formats_test.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/tests/archive_formats_test.cpp.i
+.PHONY : tests/archive_formats_test.cpp.i
+
+tests/archive_formats_test.s: tests/archive_formats_test.cpp.s
+.PHONY : tests/archive_formats_test.s
+
+# target to generate assembly for a file
+tests/archive_formats_test.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\archive_formats_test.dir\build.make CMakeFiles/archive_formats_test.dir/tests/archive_formats_test.cpp.s
+.PHONY : tests/archive_formats_test.cpp.s
+
+tests/terminal_selftest.obj: tests/terminal_selftest.cpp.obj
+.PHONY : tests/terminal_selftest.obj
+
+# target to build an object file
+tests/terminal_selftest.cpp.obj:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/tests/terminal_selftest.cpp.obj
+.PHONY : tests/terminal_selftest.cpp.obj
+
+tests/terminal_selftest.i: tests/terminal_selftest.cpp.i
+.PHONY : tests/terminal_selftest.i
+
+# target to preprocess a source file
+tests/terminal_selftest.cpp.i:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/tests/terminal_selftest.cpp.i
+.PHONY : tests/terminal_selftest.cpp.i
+
+tests/terminal_selftest.s: tests/terminal_selftest.cpp.s
+.PHONY : tests/terminal_selftest.s
+
+# target to generate assembly for a file
+tests/terminal_selftest.cpp.s:
+	$(MAKE) $(MAKESILENT) -f CMakeFiles\terminal_selftest.dir\build.make CMakeFiles/terminal_selftest.dir/tests/terminal_selftest.cpp.s
+.PHONY : tests/terminal_selftest.cpp.s
+
 # Help Target
 help:
 	@echo The following are some of the valid targets for this Makefile:
@@ -256,8 +515,15 @@ help:
 	@echo ... edit_cache
 	@echo ... rebuild_cache
 	@echo ... test
+	@echo ... TerminalArchive
 	@echo ... TerminalUI
+	@echo ... archive_dll_test
+	@echo ... archive_formats_test
+	@echo ... music_player_demo
+	@echo ... table_editor_demo
 	@echo ... terminal_demo
+	@echo ... terminal_selftest
+	@echo ... zip_tool_demo
 	@echo ... D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.obj
 	@echo ... D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.i
 	@echo ... D_/wan1/C++/Libraries/ToolHead/DataStructure/Json/JsonCore.s
@@ -267,9 +533,30 @@ help:
 	@echo ... examples/demo.obj
 	@echo ... examples/demo.i
 	@echo ... examples/demo.s
+	@echo ... examples/music_player_demo.obj
+	@echo ... examples/music_player_demo.i
+	@echo ... examples/music_player_demo.s
+	@echo ... examples/table_editor_demo.obj
+	@echo ... examples/table_editor_demo.i
+	@echo ... examples/table_editor_demo.s
+	@echo ... examples/zip_tool_demo.obj
+	@echo ... examples/zip_tool_demo.i
+	@echo ... examples/zip_tool_demo.s
+	@echo ... src/TerminalArchiveDll.obj
+	@echo ... src/TerminalArchiveDll.i
+	@echo ... src/TerminalArchiveDll.s
 	@echo ... src/TerminalUI.obj
 	@echo ... src/TerminalUI.i
 	@echo ... src/TerminalUI.s
+	@echo ... tests/archive_dll_test.obj
+	@echo ... tests/archive_dll_test.i
+	@echo ... tests/archive_dll_test.s
+	@echo ... tests/archive_formats_test.obj
+	@echo ... tests/archive_formats_test.i
+	@echo ... tests/archive_formats_test.s
+	@echo ... tests/terminal_selftest.obj
+	@echo ... tests/terminal_selftest.i
+	@echo ... tests/terminal_selftest.s
 .PHONY : help
 
 

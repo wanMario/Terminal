@@ -33,8 +33,8 @@
     {
       "label": "test: selftest",
       "type": "shell",
-      "command": "${workspaceFolder}/build/terminal_demo.exe",
-      "args": ["--selftest"],
+      "command": "${workspaceFolder}/build/terminal_selftest.exe",
+      "args": [],
       "dependsOn": "cmake: build",
       "group": {
         "kind": "test",
@@ -51,6 +51,30 @@
         "reveal": "always",
         "panel": "dedicated"
       },
+      "problemMatcher": []
+    },
+    {
+      "label": "run: table editor",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/table_editor_demo.exe",
+      "dependsOn": "cmake: build",
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "run: music player",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/music_player_demo.exe",
+      "dependsOn": "cmake: build",
+      "presentation": { "reveal": "always", "panel": "dedicated" },
+      "problemMatcher": []
+    },
+    {
+      "label": "run: zip tool",
+      "type": "shell",
+      "command": "${workspaceFolder}/build/zip_tool_demo.exe",
+      "dependsOn": "cmake: build",
+      "presentation": { "reveal": "always", "panel": "dedicated" },
       "problemMatcher": []
     },
     {

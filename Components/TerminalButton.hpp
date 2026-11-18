@@ -24,6 +24,7 @@ namespace Terminal {
 
         BoxChars frame{ Box::Round };
         bool showFrame{ true };
+        LayoutPos labelAlign{ LayoutPos::Center };
 
         // 说明：按钮底色（bgc）刻意「不开放对外入口」—— 它永远继承所在容器的背景，
         //       否则按钮会变成卡片里一块突兀的色砖。下面的配色字段仍然保留（属性还在），
@@ -60,11 +61,18 @@ namespace Terminal {
         }
 
         //---------- 配置 ----------
-        Button& SetLabel(const std::string& text) { label = text; return *this; }
+        Button& SetLabel(const std::string& text) {
+            if (label != text) {
+                label = text;
+                Invalidate();
+            }
+            return *this;
+        }
         [[nodiscard]] const std::string& GetLabel() const { return label; }
         Button& OnClick(std::function<void()> action) { onClick = std::move(action); return *this; }
         Button& SetFrame(const BoxChars& c) { frame = c; return *this; }
         Button& SetShowFrame(const bool b) { showFrame = b; return *this; }
+        Button& SetLabelAlign(const LayoutPos a) { labelAlign = a; Invalidate(); return *this; }
 
         // 只允许改「文字色」；背景色不提供入口（要保持容器一致，见上方字段注释）
         Button& SetTextColor(const Color& fg) {
@@ -205,8 +213,20 @@ namespace Terminal {
                 buf.WriteText(lx, labelY, shown, labelStyle, innerX + innerW - lx);
             } else {
                 const std::string shown = Utf8::Truncate(label, Width());
-                const int lx = Left() + std::max((Width() - Utf8::DisplayWidth(shown)) / 2, 0);
-                buf.WriteText(lx, Top(), shown, labelStyle, Right() - lx);
+                int lx = Left();
+                switch (labelAlign) {
+                case LayoutPos::Right:
+                case LayoutPos::RightTop:
+                case LayoutPos::RightBottom:
+                    lx = Right() - Utf8::DisplayWidth(shown);
+                    break;
+                case LayoutPos::Center:
+                    lx = Left() + std::max((Width() - Utf8::DisplayWidth(shown)) / 2, 0);
+                    break;
+                default:
+                    break;
+                }
+                buf.WriteText(std::max(lx, Left()), Top(), shown, labelStyle, Right() - std::max(lx, Left()));
             }
         }
 

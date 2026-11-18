@@ -19,8 +19,50 @@
 },
 {
   "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe -DLIBARCHIVE_STATIC -DTerminalArchive_EXPORTS @CMakeFiles/TerminalArchive.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\TerminalArchive.dir\\src\\TerminalArchiveDll.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\src\\TerminalArchiveDll.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/src/TerminalArchiveDll.cpp",
+  "output": "CMakeFiles/TerminalArchive.dir/src/TerminalArchiveDll.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
   "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/terminal_demo.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\terminal_demo.dir\\examples\\demo.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\examples\\demo.cpp",
   "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/examples/demo.cpp",
   "output": "CMakeFiles/terminal_demo.dir/examples/demo.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/table_editor_demo.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\table_editor_demo.dir\\examples\\table_editor_demo.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\examples\\table_editor_demo.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/examples/table_editor_demo.cpp",
+  "output": "CMakeFiles/table_editor_demo.dir/examples/table_editor_demo.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/music_player_demo.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\music_player_demo.dir\\examples\\music_player_demo.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\examples\\music_player_demo.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/examples/music_player_demo.cpp",
+  "output": "CMakeFiles/music_player_demo.dir/examples/music_player_demo.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/zip_tool_demo.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\zip_tool_demo.dir\\examples\\zip_tool_demo.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\examples\\zip_tool_demo.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/examples/zip_tool_demo.cpp",
+  "output": "CMakeFiles/zip_tool_demo.dir/examples/zip_tool_demo.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe  @CMakeFiles/terminal_selftest.dir/includes_CXX.rsp -g -std=c++20 -Wall -Wextra -o CMakeFiles\\terminal_selftest.dir\\tests\\terminal_selftest.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\tests\\terminal_selftest.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/tests/terminal_selftest.cpp",
+  "output": "CMakeFiles/terminal_selftest.dir/tests/terminal_selftest.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe   -g -std=c++20 -o CMakeFiles\\archive_dll_test.dir\\tests\\archive_dll_test.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\tests\\archive_dll_test.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/tests/archive_dll_test.cpp",
+  "output": "CMakeFiles/archive_dll_test.dir/tests/archive_dll_test.cpp.obj"
+},
+{
+  "directory": "D:/wan1/C++/Libraries/ToolHead/Terminal/build",
+  "command": "c:\\mingw64\\bin\\g++.exe   -g -std=c++20 -o CMakeFiles\\archive_formats_test.dir\\tests\\archive_formats_test.cpp.obj -c D:\\wan1\\C++\\Libraries\\ToolHead\\Terminal\\tests\\archive_formats_test.cpp",
+  "file": "D:/wan1/C++/Libraries/ToolHead/Terminal/tests/archive_formats_test.cpp",
+  "output": "CMakeFiles/archive_formats_test.dir/tests/archive_formats_test.cpp.obj"
 }
 ]
